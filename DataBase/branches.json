@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": "branch_1",
+      "name": "Lahijan",
+      "nameFa": "لاهیجان",
+      "district": "14",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "branch_2",
+      "name": "Ramsar",
+      "nameFa": "رامسر",
+      "district": "14",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "branch_3",
+      "name": "Nowshahr",
+      "nameFa": "نوشهر",
+      "district": "14",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "branch_4",
+      "name": "Royan",
+      "nameFa": "رویان",
+      "district": "14",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
