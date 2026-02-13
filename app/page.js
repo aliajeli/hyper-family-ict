@@ -10,9 +10,17 @@ import { useEffect, useState } from 'react';
 // import { AddSystemModal } from '@/components/systems';
 // import { AddDestinationModal } from '@/components/destinations';
 
+
+// Import newly created components
+import AddDestinationModal from '@/components/destinations/AddDestinationModal';
+import CopyModal from '@/components/operations/CopyModal';
+import AddSystemModal from '@/components/systems/AddSystemModal';
+
+
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+
   
   // Modal states
   const [showAddSystem, setShowAddSystem] = useState(false);
@@ -58,32 +66,29 @@ export default function Home() {
       <BottomSection />
 
       {/* Modals */}
-      <Modal
+      <AddSystemModal
         isOpen={showAddSystem}
         onClose={() => setShowAddSystem(false)}
         title="Add System"
         size="lg"
       >
-        <p className="text-text-secondary">Add System form will be here...</p>
-      </Modal>
+      </AddSystemModal>
 
-      <Modal
+      <AddDestinationModal
         isOpen={showAddDestination}
         onClose={() => setShowAddDestination(false)}
         title="Add Destination"
         size="lg"
       >
-        <p className="text-text-secondary">Add Destination form will be here...</p>
-      </Modal>
+      </AddDestinationModal>
 
-      <Modal
+      <CopyModal
         isOpen={showCopy}
         onClose={() => setShowCopy(false)}
         title="Copy Files"
         size="xl"
       >
-        <p className="text-text-secondary">Copy operation will be here...</p>
-      </Modal>
+      </CopyModal>
 
       <Modal
         isOpen={showDelete}

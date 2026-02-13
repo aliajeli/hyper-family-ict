@@ -1,4 +1,4 @@
-import './globals.css';  // <--- این خط باید حتماً باشد
+import './globals.css'; // <--- این خط باید حتماً باشد
 
 export const metadata = {
   title: 'Hyper Family ICT',
