@@ -62,4 +62,5 @@ Card.Description = CardDescription;
 Card.Content = CardContent;
 Card.Footer = CardFooter;
 
+// این خط حتماً باید باشد
 export default Card;

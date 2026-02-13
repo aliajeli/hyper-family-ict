@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge, Card, ContextMenu } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useMonitoringStore, useSystemStore } from '@/store';
 import { motion } from 'framer-motion';
@@ -16,6 +15,11 @@ import {
    Video
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+// Direct imports to avoid issues
+import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
+import ContextMenu from '@/components/ui/ContextMenu';
 
 const DeviceIcon = ({ type, className }) => {
   const icons = {
@@ -43,7 +47,7 @@ const StatusIndicator = ({ status }) => {
 
   return (
     <span className={cn(
-      'w-2.5 h-2.5 rounded-full',
+      'inline-block w-2.5 h-2.5 rounded-full',
       statusColors[status] || statusColors.unknown
     )} />
   );
@@ -131,7 +135,15 @@ const BranchCard = ({ branch, systems, statuses }) => {
             <span className="text-xl">🏪</span>
             {branch.name}
           </Card.Title>
-          <Badge variant={onlineCount === branchSystems.length && branchSystems.length > 0 ? 'success' : branchSystems.length > 0 ? 'warning' : 'default'}>
+          <Badge 
+            variant={
+              onlineCount === branchSystems.length && branchSystems.length > 0 
+                ? 'success' 
+                : branchSystems.length > 0 
+                  ? 'warning' 
+                  : 'default'
+            }
+          >
             {onlineCount}/{branchSystems.length}
           </Badge>
         </div>
@@ -167,7 +179,7 @@ const BottomSection = () => {
   useEffect(() => {
     fetchSystems();
     fetchBranches();
-  }, [fetchSystems]);
+  }, []);
 
   const fetchBranches = async () => {
     try {
