@@ -1,176 +1,105 @@
 'use client';
 
-import { Button, Input, Modal } from '@/components/ui';
-import { cn } from '@/lib/utils';
-import {
-  ArrowUp,
-  Check,
-  ChevronRight,
-  File,
-  Folder,
-  HardDrive,
-  Search
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
+import FileBrowserModal from '@/components/file-browser/FileBrowserModal';
+import { Button, Modal } from '@/components/ui';
+import Terminal from '@/components/ui/Terminal';
+import { useFileOperations } from '@/hooks/useFileOperations';
+import { FolderOpen, Play, Square, X } from 'lucide-react';
+import { useState } from 'react';
 
-// Mock Data for File System
-const mockFileSystem = {
-  root: [
-    { name: 'C:', type: 'drive', size: '256 GB' },
-    { name: 'D:', type: 'drive', size: '512 GB' },
-    { name: 'E:', type: 'drive', size: '1 TB' },
-  ],
-  'C:': [
-    { name: 'Program Files', type: 'folder' },
-    { name: 'Windows', type: 'folder' },
-    { name: 'Users', type: 'folder' },
-    { name: 'HyperFamily', type: 'folder' },
-  ],
-  'C:/HyperFamily': [
-    { name: 'Backup', type: 'folder' },
-    { name: 'Logs', type: 'folder' },
-    { name: 'config.json', type: 'file', size: '2 KB' },
-    { name: 'app.exe', type: 'file', size: '15 MB' },
-  ],
-};
+const CopyModal = ({ isOpen, onClose }) => {
+  const { logs, isRunning, startOperation, stopOperation } = useFileOperations();
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [showFileBrowser, setShowFileBrowser] = useState(false);
 
-const FileIcon = ({ type, className }) => {
-  switch (type) {
-    case 'drive': return <HardDrive className={cn("text-text-secondary", className)} />;
-    case 'folder': return <Folder className={cn("text-warning", className)} />;
-    case 'file': return <File className={cn("text-text-muted", className)} />;
-    default: return <File className={cn("text-text-muted", className)} />;
-  }
-};
-
-const FileBrowserModal = ({ isOpen, onClose, onSelect, mode = 'file' }) => {
-  const [currentPath, setCurrentPath] = useState('root');
-  const [items, setItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Load items when path changes
-  useEffect(() => {
-    // In real app, fetch from Electron IPC
-    const pathKey = currentPath === 'root' ? 'root' : currentPath;
-    setItems(mockFileSystem[pathKey] || []);
-  }, [currentPath]);
-
-  const handleNavigate = (item) => {
-    if (item.type === 'drive' || item.type === 'folder') {
-      const newPath = currentPath === 'root' 
-        ? item.name 
-        : `${currentPath}/${item.name}`;
-      setCurrentPath(newPath);
-    }
+  const handleStart = () => {
+    if (selectedFiles.length === 0) return;
+    startOperation('copy', selectedFiles);
   };
 
-  const handleGoUp = () => {
-    if (currentPath === 'root') return;
-    const parts = currentPath.split('/');
-    parts.pop();
-    setCurrentPath(parts.length === 0 ? 'root' : parts.join('/'));
+  const handleFilesSelected = (files) => {
+    setSelectedFiles(prev => [...prev, ...files]);
   };
 
-  const handleSelect = (item) => {
-    if (mode === 'folder' && item.type !== 'folder' && item.type !== 'drive') return;
-    
-    setSelectedItems(prev => {
-      const isSelected = prev.find(i => i.name === item.name);
-      if (isSelected) return prev.filter(i => i.name !== item.name);
-      return [...prev, item];
-    });
-  };
-
-  const handleConfirm = () => {
-    onSelect(selectedItems);
-    onClose();
+  const removeFile = (fileName) => {
+    setSelectedFiles(prev => prev.filter(f => f.name !== fileName));
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Select ${mode === 'file' ? 'Files' : 'Folders'}`} size="xl">
-      <div className="flex flex-col h-[500px]">
-        
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 mb-4 bg-bg-secondary p-2 rounded-lg border border-border">
-          <Button variant="ghost" size="icon" onClick={handleGoUp} disabled={currentPath === 'root'}>
-            <ArrowUp className="w-4 h-4" />
-          </Button>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} title="Copy Files" size="lg">
+        <div className="space-y-3">
           
-          <div className="flex-1 flex items-center px-3 py-1.5 bg-bg-primary rounded border border-border text-sm text-text-muted overflow-hidden">
-            <span className="truncate">{currentPath === 'root' ? 'My Computer' : currentPath}</span>
-          </div>
-
-          <div className="w-64">
-            <Input 
-              placeholder="Search..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon={<Search className="w-4 h-4" />}
-              className="h-9"
-            />
-          </div>
-        </div>
-
-        {/* File Grid */}
-        <div className="flex-1 overflow-y-auto bg-bg-primary border border-border rounded-lg p-4">
-          <div className="grid grid-cols-4 gap-4">
-            {items.map((item, index) => {
-              const isSelected = selectedItems.find(i => i.name === item.name);
-              
-              return (
-                <div
-                  key={index}
-                  onClick={() => handleSelect(item)}
-                  onDoubleClick={() => handleNavigate(item)}
-                  className={cn(
-                    "flex flex-col items-center justify-center p-4 rounded-lg border cursor-pointer transition-all duration-200 group relative",
-                    isSelected 
-                      ? "bg-accent/10 border-accent" 
-                      : "bg-bg-card border-transparent hover:bg-bg-hover hover:border-border"
-                  )}
-                >
-                  <FileIcon type={item.type} className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform" />
-                  <span className="text-sm text-center truncate w-full text-text-primary">
-                    {item.name}
-                  </span>
-                  {item.size && (
-                    <span className="text-xs text-text-muted mt-1">{item.size}</span>
-                  )}
-                  
-                  {isSelected && (
-                    <div className="absolute top-2 right-2 bg-accent text-white rounded-full p-0.5">
-                      <Check className="w-3 h-3" />
-                    </div>
-                  )}
+          {/* File Selection Area - Compact */}
+          <div className="bg-bg-tertiary p-2 rounded border border-border">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-xs font-medium text-text-secondary">Source Files:</span>
+              <Button size="sm" variant="outline" onClick={() => setShowFileBrowser(true)} leftIcon={<FolderOpen className="w-3 h-3"/>} className="h-6 text-xs px-2">
+                Add
+              </Button>
+            </div>
+            
+            <div className="h-24 overflow-y-auto bg-bg-secondary rounded border border-border p-1 space-y-1 custom-scrollbar">
+              {selectedFiles.length > 0 ? (
+                selectedFiles.map((file, idx) => (
+                  <div key={idx} className="flex justify-between items-center px-2 py-1 bg-bg-card rounded text-xs group hover:bg-bg-hover">
+                    <span className="text-text-primary truncate">{file.name}</span>
+                    <button onClick={() => removeFile(file.name)} className="text-text-muted hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full text-text-muted text-xs">
+                  No files selected
                 </div>
-              );
-            })}
+              )}
+            </div>
+          </div>
 
-            {items.length === 0 && (
-              <div className="col-span-4 flex flex-col items-center justify-center text-text-muted py-10">
-                <Folder className="w-12 h-12 mb-2 opacity-20" />
-                <p>This folder is empty</p>
-              </div>
+          {/* Terminal - Compact Height */}
+          <Terminal logs={logs} className="h-48 text-xs" />
+
+          {/* Actions - Compact */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            {isRunning ? (
+              <Button 
+                onClick={stopOperation} 
+                variant="danger"
+                size="sm"
+                leftIcon={<Square className="w-3 h-3" />}
+                className="h-8 text-xs"
+              >
+                Stop
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleStart} 
+                variant="success"
+                size="sm"
+                leftIcon={<Play className="w-3 h-3" />}
+                disabled={selectedFiles.length === 0}
+                className="h-8 text-xs"
+              >
+                Start Copy
+              </Button>
             )}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-          <div className="text-sm text-text-secondary">
-            {selectedItems.length} items selected
-          </div>
-          <div className="flex gap-3">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleConfirm} disabled={selectedItems.length === 0}>
-              Select
+            
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={isRunning} className="h-8 text-xs">
+              Close
             </Button>
           </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <FileBrowserModal 
+        isOpen={showFileBrowser} 
+        onClose={() => setShowFileBrowser(false)} 
+        onSelect={handleFilesSelected}
+        mode="mixed"
+      />
+    </>
   );
 };
 
-export default FileBrowserModal;
+export default CopyModal;

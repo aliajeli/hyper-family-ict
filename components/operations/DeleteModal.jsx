@@ -15,49 +15,52 @@ const DeleteModal = ({ isOpen, onClose }) => {
   };
 
   const handleSelectFiles = () => {
-    // Open file browser mock
     console.log('Open file browser');
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Delete Files from Destinations" size="xl">
-      <div className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Delete Files" size="lg">
+      <div className="space-y-3">
         {/* File Selection Area */}
-        <div className="bg-bg-tertiary p-4 rounded-lg border border-border">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-text-secondary">Files/Folders to Delete:</span>
-            <Button size="sm" variant="outline" onClick={handleSelectFiles} leftIcon={<FolderOpen className="w-4 h-4"/>}>
-              Select Files
+        <div className="bg-bg-tertiary p-2 rounded border border-border">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-xs font-medium text-text-secondary">Items to Delete:</span>
+            <Button size="sm" variant="outline" onClick={handleSelectFiles} leftIcon={<FolderOpen className="w-3 h-3"/>} className="h-6 text-xs px-2">
+              Select
             </Button>
           </div>
           
-          <div className="h-20 bg-bg-secondary rounded border border-border flex items-center justify-center text-text-muted text-sm">
-            No files selected (Mock)
+          <div className="h-20 bg-bg-secondary rounded border border-border flex items-center justify-center text-text-muted text-xs">
+            No items selected (Mock)
           </div>
         </div>
 
         {/* Terminal Log */}
-        <Terminal logs={logs} className="h-64" />
+        <Terminal logs={logs} className="h-48 text-xs" />
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button variant="ghost" onClick={onClose} disabled={isRunning}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+           <Button variant="ghost" size="sm" onClick={onClose} disabled={isRunning} className="h-8 text-xs">
             Close
           </Button>
-          
+
           {isRunning ? (
             <Button 
               onClick={stopOperation} 
               variant="secondary"
-              leftIcon={<StopCircle className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<StopCircle className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
-              Stop Operation
+              Stop
             </Button>
           ) : (
             <Button 
               onClick={handleStart} 
               variant="danger"
-              leftIcon={<Trash2 className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<Trash2 className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
               Start Delete
             </Button>

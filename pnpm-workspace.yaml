@@ -1,0 +1,12 @@
+onlyBuiltDependencies:
+  - c
+  - e
+  - electron
+  - electron-winstaller
+  - l
+  - n
+  - o
+  - r
+  - sharp
+  - t
+  - unrs-resolver

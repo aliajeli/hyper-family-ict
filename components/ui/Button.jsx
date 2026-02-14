@@ -14,10 +14,10 @@ const buttonVariants = {
 };
 
 const buttonSizes = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
-  icon: 'p-2',
+  sm: 'px-2.5 py-1 text-xs h-7', // Compact
+  md: 'px-3 py-1.5 text-sm h-9', // Standard
+  lg: 'px-5 py-2.5 text-base h-11',
+  icon: 'p-1.5 h-8 w-8',
 };
 
 const Button = forwardRef(({

@@ -1,0 +1,126 @@
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const path = require('path');
+const fs = require('fs').promises;
+const os = require('os');
+
+let mainWindow;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    frame: false, // Custom Titlebar
+    titleBarStyle: 'hidden',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false, // Required for some Node APIs
+    },
+    icon: path.join(__dirname, '../public/icons/icon.png'),
+    backgroundColor: '#0f172a',
+  });
+
+  // این بخش را اصلاح کنید
+  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+  let startUrl;
+  if (isDev) {
+    // در حالت توسعه از پورت 3000 نکت استفاده کن
+    startUrl = 'http://localhost:3000';
+  } else {
+    // در حالت نهایی فایل ساخته شده را باز کن
+    startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '../out/index.html')}`;
+  }
+  mainWindow.loadURL(startUrl);
+
+
+  // Open DevTools in development
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
+
+  mainWindow.on('closed', function () {
+    mainWindow = null;
+  });
+}
+
+app.on('ready', createWindow);
+
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', function () {
+  if (mainWindow === null) {
+    createWindow();
+  }
+});
+
+// --- IPC Handlers ---
+
+// Window Controls
+ipcMain.on('window-minimize', () => mainWindow?.minimize());
+ipcMain.on('window-maximize', () => {
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+ipcMain.on('window-close', () => mainWindow?.close());
+
+// File System Operations
+ipcMain.handle('fs-read-dir', async (event, dirPath) => {
+  try {
+    const targetPath = dirPath === 'root' ? '/' : dirPath; // Adjust for Windows later
+    
+    // For Windows Drives
+    if (dirPath === 'root' && process.platform === 'win32') {
+      const { exec } = require('child_process');
+      return new Promise((resolve) => {
+        exec('wmic logicaldisk get name', (error, stdout) => {
+          if (error) return resolve([]);
+          const drives = stdout.split('\r\r\n')
+            .filter(value => /[A-Za-z]:/.test(value))
+            .map(value => ({
+              name: value.trim(),
+              type: 'drive',
+              path: value.trim() + '\\'
+            }));
+          resolve(drives);
+        });
+      });
+    }
+
+    const items = await fs.readdir(targetPath, { withFileTypes: true });
+    
+    return items.map(item => ({
+      name: item.name,
+      type: item.isDirectory() ? 'folder' : 'file',
+      path: path.join(targetPath, item.name),
+      size: item.isFile() ? 'Unknown' : null // Can get size with fs.stat
+    })).filter(item => !item.name.startsWith('.')); // Hide hidden files
+    
+  } catch (error) {
+    console.error('Error reading directory:', error);
+    return [];
+  }
+});
+
+// Execute Command (Ping, Copy, etc.)
+ipcMain.handle('exec-command', async (event, command) => {
+  const { exec } = require('child_process');
+  return new Promise((resolve) => {
+    exec(command, (error, stdout, stderr) => {
+      resolve({ 
+        success: !error, 
+        output: stdout || stderr 
+      });
+    });
+  });
+});

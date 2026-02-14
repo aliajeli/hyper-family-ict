@@ -19,36 +19,36 @@ const ReplaceModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Replace Files in Destinations" size="xl">
-      <div className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Replace Files" size="lg">
+      <div className="space-y-3">
         
-        {/* Prefix Input */}
-        <Input 
-          label="Prefix for Old Files (Backup)" 
-          placeholder="e.g., BACKUP_" 
-          value={prefix}
-          onChange={(e) => setPrefix(e.target.value)}
-        />
+        {/* Top Row: Prefix & Button */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+             <Input 
+              label="Backup Prefix" 
+              placeholder="e.g., BK_" 
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+          <Button size="sm" variant="outline" onClick={handleSelectFiles} leftIcon={<FolderOpen className="w-3 h-3"/>} className="h-8 text-xs mb-[2px]">
+            Select Source Files
+          </Button>
+        </div>
 
-        {/* File Selection */}
-        <div className="bg-bg-tertiary p-4 rounded-lg border border-border">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-text-secondary">New Files to Upload:</span>
-            <Button size="sm" variant="outline" onClick={handleSelectFiles} leftIcon={<FolderOpen className="w-4 h-4"/>}>
-              Select Files
-            </Button>
-          </div>
-          <div className="h-16 bg-bg-secondary rounded border border-border flex items-center justify-center text-text-muted text-sm">
-            No files selected (Mock)
-          </div>
+        {/* File Preview */}
+        <div className="h-16 bg-bg-tertiary rounded border border-border flex items-center justify-center text-text-muted text-xs">
+          No files selected (Mock)
         </div>
 
         {/* Terminal Log */}
-        <Terminal logs={logs} className="h-64" />
+        <Terminal logs={logs} className="h-48 text-xs" />
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button variant="ghost" onClick={onClose} disabled={isRunning}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isRunning} className="h-8 text-xs">
             Close
           </Button>
           
@@ -56,15 +56,19 @@ const ReplaceModal = ({ isOpen, onClose }) => {
             <Button 
               onClick={stopOperation} 
               variant="secondary"
-              leftIcon={<StopCircle className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<StopCircle className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
-              Stop Operation
+              Stop
             </Button>
           ) : (
             <Button 
               onClick={handleStart} 
               variant="warning"
-              leftIcon={<RefreshCw className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<RefreshCw className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
               Start Replace
             </Button>

@@ -19,45 +19,49 @@ const RenameModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Rename Files/Folders" size="lg">
-      <div className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Rename" size="md">
+      <div className="space-y-3">
         
-        {/* Input Fields */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Input Fields - Grid */}
+        <div className="grid grid-cols-2 gap-3">
           <Input 
             label="Current Name" 
-            placeholder="e.g., old-file.txt" 
+            placeholder="e.g., old.txt" 
             value={targetName}
             onChange={(e) => setTargetName(e.target.value)}
+            className="h-8 text-xs"
           />
           <Input 
             label="Rename Text" 
-            placeholder="e.g., new-name" 
+            placeholder="e.g., new" 
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            className="h-8 text-xs"
           />
         </div>
 
-        {/* Options */}
-        <div className="flex gap-6">
+        {/* Options - Compact Row */}
+        <div className="flex gap-4 px-1">
           <Checkbox 
-            label="Add as Prefix" 
+            label="Add Prefix" 
             checked={usePrefix} 
             onChange={(e) => setUsePrefix(e.target.checked)} 
+            className="text-xs"
           />
           <Checkbox 
-            label="Add as Suffix" 
+            label="Add Suffix" 
             checked={useSuffix} 
             onChange={(e) => setUseSuffix(e.target.checked)} 
+            className="text-xs"
           />
         </div>
 
         {/* Terminal Log */}
-        <Terminal logs={logs} className="h-64" />
+        <Terminal logs={logs} className="h-40 text-xs" />
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button variant="ghost" onClick={onClose} disabled={isRunning}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-border">
+          <Button variant="ghost" size="sm" onClick={onClose} disabled={isRunning} className="h-8 text-xs">
             Close
           </Button>
           
@@ -65,17 +69,21 @@ const RenameModal = ({ isOpen, onClose }) => {
             <Button 
               onClick={stopOperation} 
               variant="secondary"
-              leftIcon={<StopCircle className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<StopCircle className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
-              Stop Operation
+              Stop
             </Button>
           ) : (
             <Button 
               onClick={handleStart} 
               variant="primary"
-              leftIcon={<FileEdit className="w-4 h-4" />}
+              size="sm"
+              leftIcon={<FileEdit className="w-3 h-3" />}
+              className="h-8 text-xs"
             >
-              Start Rename
+              Rename
             </Button>
           )}
         </div>

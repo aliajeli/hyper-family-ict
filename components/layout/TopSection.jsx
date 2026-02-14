@@ -4,20 +4,20 @@ import { Button, Checkbox, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useMonitoringStore } from '@/store';
 import {
-   Activity,
-   Copy,
-   FileEdit,
-   FolderInput,
-   Info,
-   Package,
-   Play,
-   Plus,
-   RefreshCw,
-   Send,
-   Settings,
-   Square,
-   Target,
-   Trash2,
+  Activity,
+  Copy,
+  FileEdit,
+  FolderInput,
+  Info,
+  Package,
+  Play,
+  Plus,
+  RefreshCw,
+  Send,
+  Settings,
+  Square,
+  Target,
+  Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -41,18 +41,6 @@ const TopSection = ({
 
   const { isMonitoring, startMonitoring, stopMonitoring } = useMonitoringStore();
 
-  const handleStartServices = () => {
-    console.log('Starting services:', services);
-  };
-
-  const handleStopServices = () => {
-    console.log('Stopping services:', services);
-  };
-
-  const handleSendMessage = () => {
-    console.log('Sending message:', message);
-  };
-
   const handleToggleMonitoring = () => {
     if (isMonitoring) {
       stopMonitoring();
@@ -62,170 +50,81 @@ const TopSection = ({
   };
 
   return (
-    <div className="bg-bg-secondary border-b border-border p-4">
-      {/* Row 1: Main Action Buttons */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Button
-          onClick={onAddSystem}
-          leftIcon={<Plus className="w-4 h-4" />}
-          variant="primary"
-        >
+    <div className="bg-bg-secondary border-b border-border p-2 space-y-2 text-sm">
+      {/* Row 1: System & Path */}
+      <div className="flex items-center gap-2">
+        <Button onClick={onAddSystem} leftIcon={<Plus className="w-3.5 h-3.5" />} size="sm" variant="primary">
           Add System
         </Button>
-
-        <Button
-          onClick={onAddDestination}
-          leftIcon={<Target className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Add Destination
+        <Button onClick={onAddDestination} leftIcon={<Target className="w-3.5 h-3.5" />} size="sm" variant="secondary">
+          Add Dest
         </Button>
-
-        <div className="flex-1 max-w-md">
-          <Input
-            placeholder="Path (e.g., C:\Program Files\App)"
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-            icon={<FolderInput className="w-4 h-4" />}
+        <div className="flex-1">
+          <Input 
+            placeholder="Path (e.g., C:\App)" 
+            value={path} 
+            onChange={(e) => setPath(e.target.value)} 
+            icon={<FolderInput className="w-3.5 h-3.5" />}
+            className="h-8 text-sm"
           />
         </div>
-
-        <Button
-          onClick={onSettings}
-          variant="ghost"
-          size="icon"
-          title="Settings"
-        >
-          <Settings className="w-5 h-5" />
+        <Button onClick={onSettings} variant="ghost" size="icon" className="h-8 w-8">
+          <Settings className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Row 2: Services */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex-1 max-w-sm">
-          <Input
-            placeholder="Services (Service1, Service2, ...)"
-            value={services}
+      <div className="flex items-center gap-2">
+        <div className="flex-[2]">
+          <Input 
+            placeholder="Services (Srv1, Srv2...)" 
+            value={services} 
             onChange={(e) => setServices(e.target.value)}
+            className="h-8 text-sm"
           />
         </div>
-
-        <Checkbox
-          label="Stop Before"
-          checked={stopBefore}
-          onChange={(e) => setStopBefore(e.target.checked)}
-        />
-
-        <Checkbox
-          label="Start After"
-          checked={startAfter}
-          onChange={(e) => setStartAfter(e.target.checked)}
-        />
-
-        <Button
-          onClick={handleStartServices}
-          leftIcon={<Play className="w-4 h-4" />}
-          variant="success"
-          size="sm"
-        >
-          Start Srv
-        </Button>
-
-        <Button
-          onClick={handleStopServices}
-          leftIcon={<Square className="w-4 h-4" />}
-          variant="danger"
-          size="sm"
-        >
-          Stop Srv
-        </Button>
+        <div className="flex items-center gap-3 px-2 border-l border-r border-border h-8">
+          <Checkbox label="Stop Before" checked={stopBefore} onChange={(e) => setStopBefore(e.target.checked)} className="text-xs" />
+          <Checkbox label="Start After" checked={startAfter} onChange={(e) => setStartAfter(e.target.checked)} className="text-xs" />
+        </div>
+        <Button size="sm" variant="success" leftIcon={<Play className="w-3.5 h-3.5" />} className="h-8 text-xs">Start Srv</Button>
+        <Button size="sm" variant="danger" leftIcon={<Square className="w-3.5 h-3.5" />} className="h-8 text-xs">Stop Srv</Button>
       </div>
 
       {/* Row 3: Message */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex-1 max-w-lg">
-          <Input
-            placeholder="Message to send..."
-            value={message}
+      <div className="flex items-center gap-2">
+        <div className="flex-[2]">
+          <Input 
+            placeholder="Message to send..." 
+            value={message} 
             onChange={(e) => setMessage(e.target.value)}
+            className="h-8 text-sm"
           />
         </div>
-
-        <Checkbox
-          label="Send After Operation"
-          checked={sendAfter}
-          onChange={(e) => setSendAfter(e.target.checked)}
-        />
-
-        <Button
-          onClick={handleSendMessage}
-          leftIcon={<Send className="w-4 h-4" />}
-          variant="primary"
-          size="sm"
-        >
-          Send Message
-        </Button>
+        <Checkbox label="Send After Op" checked={sendAfter} onChange={(e) => setSendAfter(e.target.checked)} className="text-xs whitespace-nowrap" />
+        <Button size="sm" variant="primary" leftIcon={<Send className="w-3.5 h-3.5" />} className="h-8 text-xs whitespace-nowrap">Send Msg</Button>
       </div>
 
-      {/* Row 4: Operation Buttons */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          onClick={onCopy}
-          leftIcon={<Copy className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Copy
-        </Button>
-
-        <Button
-          onClick={onDelete}
-          leftIcon={<Trash2 className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Delete
-        </Button>
-
-        <Button
-          onClick={onRename}
-          leftIcon={<FileEdit className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Rename
-        </Button>
-
-        <Button
-          onClick={onReplace}
-          leftIcon={<RefreshCw className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Replace
-        </Button>
-
+      {/* Row 4: Operations */}
+      <div className="flex items-center gap-2 pt-1 border-t border-border">
+        <Button onClick={onCopy} leftIcon={<Copy className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Copy</Button>
+        <Button onClick={onDelete} leftIcon={<Trash2 className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Delete</Button>
+        <Button onClick={onRename} leftIcon={<FileEdit className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Rename</Button>
+        <Button onClick={onReplace} leftIcon={<RefreshCw className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Replace</Button>
+        
         <div className="flex-1" />
-
-        <Button
-          onClick={onEquipments}
-          leftIcon={<Package className="w-4 h-4" />}
-          variant="secondary"
-        >
-          Equipments
-        </Button>
-
-        <Button
-          onClick={handleToggleMonitoring}
-          leftIcon={<Activity className="w-4 h-4" />}
+        
+        <Button onClick={onEquipments} leftIcon={<Package className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Equipments</Button>
+        <Button 
+          onClick={handleToggleMonitoring} 
+          leftIcon={<Activity className="w-3.5 h-3.5" />} 
+          size="sm"
           variant={isMonitoring ? 'danger' : 'success'}
+          className="h-8 text-xs whitespace-nowrap"
         >
-          {isMonitoring ? 'Stop Monitoring' : 'Start Monitoring'}
+          {isMonitoring ? 'Stop Monitor' : 'Start Monitor'}
         </Button>
-
-        <Button
-          onClick={onAbout}
-          leftIcon={<Info className="w-4 h-4" />}
-          variant="ghost"
-        >
-          About
-        </Button>
+        <Button onClick={onAbout} leftIcon={<Info className="w-3.5 h-3.5" />} size="sm" variant="ghost" className="h-8 text-xs">About</Button>
       </div>
     </div>
   );
