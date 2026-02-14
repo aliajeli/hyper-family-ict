@@ -6,21 +6,18 @@ import { Modal } from '@/components/ui';
 import { useAuthStore } from '@/store';
 import { useEffect, useState } from 'react';
 
-// Import page modals (will create later)
-// import { AddSystemModal } from '@/components/systems';
-// import { AddDestinationModal } from '@/components/destinations';
-
-
-// Import newly created components
+// Import All Modals
 import AddDestinationModal from '@/components/destinations/AddDestinationModal';
+import EquipmentsModal from '@/components/equipments/EquipmentsModal';
 import CopyModal from '@/components/operations/CopyModal';
+import DeleteModal from '@/components/operations/DeleteModal';
+import RenameModal from '@/components/operations/RenameModal';
+import ReplaceModal from '@/components/operations/ReplaceModal';
 import AddSystemModal from '@/components/systems/AddSystemModal';
-
 
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-
   
   // Modal states
   const [showAddSystem, setShowAddSystem] = useState(false);
@@ -37,19 +34,11 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  // Prevent hydration mismatch
-  if (!mounted) {
-    return null;
-  }
-
-  // Show login if not authenticated
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
+  if (!mounted) return null;
+  if (!isAuthenticated) return <LoginPage />;
 
   return (
     <MainLayout>
-      {/* Top Section - Action Buttons */}
       <TopSection
         onAddSystem={() => setShowAddSystem(true)}
         onAddDestination={() => setShowAddDestination(true)}
@@ -62,87 +51,38 @@ export default function Home() {
         onSettings={() => setShowSettings(true)}
       />
 
-      {/* Bottom Section - Monitoring */}
       <BottomSection />
 
-      {/* Modals */}
-      <AddSystemModal
-        isOpen={showAddSystem}
-        onClose={() => setShowAddSystem(false)}
-        title="Add System"
-        size="lg"
-      >
-      </AddSystemModal>
+      {/* Operation Modals */}
+      <AddSystemModal isOpen={showAddSystem} onClose={() => setShowAddSystem(false)} />
+      <AddDestinationModal isOpen={showAddDestination} onClose={() => setShowAddDestination(false)} />
+      <CopyModal isOpen={showCopy} onClose={() => setShowCopy(false)} />
+      <DeleteModal isOpen={showDelete} onClose={() => setShowDelete(false)} />
+      <RenameModal isOpen={showRename} onClose={() => setShowRename(false)} />
+      <ReplaceModal isOpen={showReplace} onClose={() => setShowReplace(false)} />
+      
+      {/* Equipments Modal */}
+      <EquipmentsModal isOpen={showEquipments} onClose={() => setShowEquipments(false)} />
 
-      <AddDestinationModal
-        isOpen={showAddDestination}
-        onClose={() => setShowAddDestination(false)}
-        title="Add Destination"
-        size="lg"
-      >
-      </AddDestinationModal>
-
-      <CopyModal
-        isOpen={showCopy}
-        onClose={() => setShowCopy(false)}
-        title="Copy Files"
-        size="xl"
-      >
-      </CopyModal>
-
-      <Modal
-        isOpen={showDelete}
-        onClose={() => setShowDelete(false)}
-        title="Delete Files"
-        size="xl"
-      >
-        <p className="text-text-secondary">Delete operation will be here...</p>
+      {/* About Modal */}
+      <Modal isOpen={showAbout} onClose={() => setShowAbout(false)} title="About">
+        <div className="space-y-4 text-center py-6">
+            <h2 className="text-xl font-bold text-accent">Hyper Family ICT Manager</h2>
+            <p className="text-text-secondary">Version 1.0.0</p>
+            <div className="p-4 bg-bg-tertiary rounded-lg border border-border inline-block text-left">
+                <p><strong>Author:</strong> Ali Ajeli Lahiji</p>
+                <p><strong>Email:</strong> lahiji.ali@hyperfamili.com</p>
+                <p><strong>Tech Stack:</strong> Next.js, Tailwind, Electron</p>
+            </div>
+            <p className="text-xs text-text-muted mt-4">© 2024 Hyper Family Chain Stores. All rights reserved.</p>
+        </div>
       </Modal>
 
-      <Modal
-        isOpen={showRename}
-        onClose={() => setShowRename(false)}
-        title="Rename Files"
-        size="lg"
-      >
-        <p className="text-text-secondary">Rename operation will be here...</p>
+      {/* Settings Modal Placeholder */}
+      <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="Settings">
+        <p>Settings page coming soon...</p>
       </Modal>
 
-      <Modal
-        isOpen={showReplace}
-        onClose={() => setShowReplace(false)}
-        title="Replace Files"
-        size="xl"
-      >
-        <p className="text-text-secondary">Replace operation will be here...</p>
-      </Modal>
-
-      <Modal
-        isOpen={showEquipments}
-        onClose={() => setShowEquipments(false)}
-        title="Equipments"
-        size="xl"
-      >
-        <p className="text-text-secondary">Equipments list will be here...</p>
-      </Modal>
-
-      <Modal
-        isOpen={showAbout}
-        onClose={() => setShowAbout(false)}
-        title="About"
-        size="md"
-      >
-        <p className="text-text-secondary">About page will be here...</p>
-      </Modal>
-
-      <Modal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        title="Settings"
-        size="lg"
-      >
-        <p className="text-text-secondary">Settings page will be here...</p>
-      </Modal>
     </MainLayout>
   );
 }
