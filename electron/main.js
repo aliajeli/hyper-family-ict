@@ -61,6 +61,47 @@ app.on('activate', function () {
   }
 });
 
+
+// Execute PowerShell Command
+ipcMain.handle('exec-powershell', async (event, command) => {
+  const { exec } = require('child_process');
+  // Use PowerShell explicitly
+  const psCommand = `powershell.exe -Command "${command.replace(/"/g, '\\"')}"`;
+  
+  return new Promise((resolve) => {
+    exec(psCommand, (error, stdout, stderr) => {
+      resolve({ 
+        success: !error, 
+        output: stdout.trim(), 
+        error: stderr.trim() 
+      });
+    });
+  });
+});
+
+// Launch External App (RDP, Putty, Winbox)
+ipcMain.handle('launch-app', async (event, { appPath, args = [] }) => {
+  const { spawn } = require('child_process');
+  try {
+    const subprocess = spawn(appPath, args, {
+      detached: true,
+      stdio: 'ignore'
+    });
+    subprocess.unref();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// RDP Connection
+ipcMain.handle('connect-rdp', async (event, ip) => {
+  const { exec } = require('child_process');
+  exec(`mstsc /v:${ip}`);
+  return { success: true };
+});
+
+
 // --- IPC Handlers ---
 
 // Window Controls

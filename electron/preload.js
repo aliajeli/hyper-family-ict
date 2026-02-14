@@ -6,6 +6,14 @@ contextBridge.exposeInMainWorld('electron', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
 
+  // PowerShell
+  powershell: (command) => ipcRenderer.invoke('exec-powershell', command),
+  
+  // Launch Apps
+  launchApp: (appPath, args) => ipcRenderer.invoke('launch-app', { appPath, args }),
+  connectRDP: (ip) => ipcRenderer.invoke('connect-rdp', ip),
+
+
   // File System
   readDir: (path) => ipcRenderer.invoke('fs-read-dir', path),
   

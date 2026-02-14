@@ -1,93 +1,73 @@
 import { useDestinationStore } from '@/store';
 import { useState } from 'react';
+import { useSystemOperations } from './useSystemOperations'; // Import new hook
+
 
 export const useFileOperations = () => {
-  const [logs, setLogs] = useState([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const { destinations } = useDestinationStore(); // In real app, use selectedDestinations
+  const { 
+    logs, 
+    setLogs, 
+    isRunning, 
+    setIsRunning, 
+    checkConnection, 
+    copyFile 
+  } = useSystemOperations();
+  
+  const { destinations, selectedDestinations } = useDestinationStore();
 
   const addLog = (message, type = 'default') => {
     setLogs(prev => [...prev, { message, type }]);
   };
 
-  const simulateOperation = async (operationType, params) => {
+  const startOperation = async (operationType, params) => {
     setIsRunning(true);
     setLogs([]);
-    addLog(`Starting ${operationType} operation...`, 'info');
-
-    // Filter systems (Mock: using all destinations for demo)
-    const targets = destinations.length > 0 ? destinations : [
-      { branch: 'Lahijan', name: 'Server-01', ip: '192.168.1.10' },
-      { branch: 'Ramsar', name: 'Client-04', ip: '192.168.2.15' }
-    ];
+    
+    // Get selected destinations or use mock if empty
+    const targets = selectedDestinations.length > 0 
+      ? destinations.filter(d => selectedDestinations.includes(d.id))
+      : [
+          { branch: 'Lahijan', name: 'Mock-PC', ip: '127.0.0.1' } // Localhost for testing
+        ];
 
     for (const target of targets) {
-      if (!isRunning) break; // Check if stopped (doesn't work perfectly in loop without ref, but OK for demo)
+      if (!isRunning) break; 
 
-      const prefix = `[${target.branch} - ${target.name}]`;
+      const prefix = `[${target.branch}-${target.name}]`;
 
-      // 1. Check Connection
-      addLog(`${prefix} Connecting...`, 'default');
-      await new Promise(r => setTimeout(r, 800)); // Simulate network delay
-
-      const isConnected = Math.random() > 0.1; // 90% success chance
-
-      if (!isConnected) {
-        addLog(`${prefix} Not Connected`, 'error');
+      // 1. Check Connection (Real Ping)
+      const isOnline = await checkConnection(target.ip);
+      
+      if (!isOnline) {
+        setLogs(prev => [...prev, { message: `${prefix} Skipped (Offline)`, type: 'error' }]);
         continue;
       }
 
-      addLog(`${prefix} Connected`, 'success');
-
       // 2. Perform Operation
-      await new Promise(r => setTimeout(r, 1000)); // Simulate operation time
-
-      switch (operationType) {
-        case 'copy':
-          addLog(`${prefix} Copying files...`, 'default');
-          addLog(`${prefix} Copied`, 'success');
-          
-          // 3. Verify (Only for Copy/Replace)
-          await new Promise(r => setTimeout(r, 500));
-          addLog(`${prefix} Verifying SHA checksum...`, 'info');
-          addLog(`${prefix} Verified`, 'success');
-          break;
-
-        case 'delete':
-          addLog(`${prefix} Deleting files...`, 'default');
-          addLog(`${prefix} Deleted`, 'success');
-          break;
-
-        case 'rename':
-          addLog(`${prefix} Checking file existence...`, 'default');
-          addLog(`${prefix} File Exists`, 'success');
-          addLog(`${prefix} Renamed to ${params.newName}`, 'success');
-          break;
-          
-        case 'replace':
-           addLog(`${prefix} Checking existence...`, 'default');
-           addLog(`${prefix} Found. Renaming old file...`, 'warning');
-           addLog(`${prefix} Copying new file...`, 'default');
-           addLog(`${prefix} Verified`, 'success');
-           break;
+      if (operationType === 'copy') {
+        const files = params; // array of files
+        for (const file of files) {
+           // Default path C:\HyperFamily\Downloads
+           await copyFile(file.path, target.ip, 'HyperFamily\\Downloads');
+        }
       }
       
-      addLog('----------------------------------------', 'default');
+      // ... handle other operations ...
     }
 
-    addLog('Operation Completed.', 'info');
+    setLogs(prev => [...prev, { message: 'Operation Completed.', type: 'info' }]);
     setIsRunning(false);
   };
 
   const stopOperation = () => {
     setIsRunning(false);
-    addLog('Operation Stopped by User.', 'error');
+    setLogs(prev => [...prev, { message: 'Stopped by user.', type: 'warning' }]);
   };
 
   return {
     logs,
     isRunning,
-    startOperation: simulateOperation,
+    startOperation,
     stopOperation
   };
 };
