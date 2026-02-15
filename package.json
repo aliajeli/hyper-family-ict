@@ -2,13 +2,13 @@
   "name": "hyper-family-ict",
   "version": "1.0.0",
   "main": "electron/main.js",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "next build && electron-builder"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_START_URL=http://localhost:3000 electron .\"",
+  "electron:build": "next build && electron-builder"
+},
   "dependencies": {
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

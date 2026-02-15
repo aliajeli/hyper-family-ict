@@ -5,13 +5,21 @@ import Terminal from '@/components/ui/Terminal';
 import { useFileOperations } from '@/hooks/useFileOperations';
 import { FolderOpen, StopCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+// اضافه کردن این خط:
+import { useDestinationStore } from '@/store';
+// و در صورت نیاز DestinationSelector:
+import DestinationSelector from '@/components/destinations/DestinationSelector';
 
 const DeleteModal = ({ isOpen, onClose }) => {
   const { logs, isRunning, startOperation, stopOperation } = useFileOperations();
+  const { destinations, selectedDestinations } = useDestinationStore();
   const [selectedFiles, setSelectedFiles] = useState([]);
-
+  
   const handleStart = () => {
-    startOperation('delete', selectedFiles);
+    const targets = destinations.filter(d => selectedDestinations.includes(d.id));
+    if (selectedFiles.length > 0 && targets.length > 0) {
+      startOperation('delete', { files: selectedFiles, targets });
+    }
   };
 
   const handleSelectFiles = () => {

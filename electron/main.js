@@ -1,10 +1,9 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
-const os = require('os');
-
+const fsExtra = require('fs-extra'); // Make sure fs-extra is installed
 const { PowerShell } = require('node-powershell');
-
+const crypto = require('crypto');
 
 let mainWindow;
 
@@ -20,25 +19,14 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false, // Required for some Node APIs
+      sandbox: false, // Required for Node APIs
     },
     icon: path.join(__dirname, '../public/icons/icon.png'),
     backgroundColor: '#0f172a',
   });
 
-  // این بخش را اصلاح کنید
-  const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-
-  let startUrl;
-  if (isDev) {
-    // در حالت توسعه از پورت 3000 نکت استفاده کن
-    startUrl = 'http://localhost:3000';
-  } else {
-    // در حالت نهایی فایل ساخته شده را باز کن
-    startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '../out/index.html')}`;
-  }
+  const startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, '../out/index.html')}`;
   mainWindow.loadURL(startUrl);
-
 
   // Open DevTools in development
   if (process.env.NODE_ENV === 'development') {
@@ -64,48 +52,9 @@ app.on('activate', function () {
   }
 });
 
-
-// Execute PowerShell Command
-ipcMain.handle('exec-powershell', async (event, command) => {
-  const { exec } = require('child_process');
-  // Use PowerShell explicitly
-  const psCommand = `powershell.exe -Command "${command.replace(/"/g, '\\"')}"`;
-  
-  return new Promise((resolve) => {
-    exec(psCommand, (error, stdout, stderr) => {
-      resolve({ 
-        success: !error, 
-        output: stdout.trim(), 
-        error: stderr.trim() 
-      });
-    });
-  });
-});
-
-// Launch External App (RDP, Putty, Winbox)
-ipcMain.handle('launch-app', async (event, { appPath, args = [] }) => {
-  const { spawn } = require('child_process');
-  try {
-    const subprocess = spawn(appPath, args, {
-      detached: true,
-      stdio: 'ignore'
-    });
-    subprocess.unref();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-// RDP Connection
-ipcMain.handle('connect-rdp', async (event, ip) => {
-  const { exec } = require('child_process');
-  exec(`mstsc /v:${ip}`);
-  return { success: true };
-});
-
-
-// --- IPC Handlers ---
+// ----------------------------------------------------------------
+// IPC Handlers
+// ----------------------------------------------------------------
 
 // Window Controls
 ipcMain.on('window-minimize', () => mainWindow?.minimize());
@@ -118,12 +67,13 @@ ipcMain.on('window-maximize', () => {
 });
 ipcMain.on('window-close', () => mainWindow?.close());
 
-// File System Operations
+
+// File System Browser (Local)
 ipcMain.handle('fs-read-dir', async (event, dirPath) => {
   try {
-    const targetPath = dirPath === 'root' ? '/' : dirPath; // Adjust for Windows later
+    const targetPath = dirPath === 'root' ? '/' : dirPath;
     
-    // For Windows Drives
+    // Windows Drives Logic
     if (dirPath === 'root' && process.platform === 'win32') {
       const { exec } = require('child_process');
       return new Promise((resolve) => {
@@ -147,7 +97,7 @@ ipcMain.handle('fs-read-dir', async (event, dirPath) => {
       name: item.name,
       type: item.isDirectory() ? 'folder' : 'file',
       path: path.join(targetPath, item.name),
-      size: item.isFile() ? 'Unknown' : null // Can get size with fs.stat
+      size: item.isFile() ? 'Unknown' : null 
     })).filter(item => !item.name.startsWith('.')); // Hide hidden files
     
   } catch (error) {
@@ -156,7 +106,8 @@ ipcMain.handle('fs-read-dir', async (event, dirPath) => {
   }
 });
 
-// Execute Command (Ping, Copy, etc.)
+
+// Execute Simple Command
 ipcMain.handle('exec-command', async (event, command) => {
   const { exec } = require('child_process');
   return new Promise((resolve) => {
@@ -169,26 +120,126 @@ ipcMain.handle('exec-command', async (event, command) => {
   });
 });
 
-// ... existing code ...
 
-// --- File Operations Handlers ---
+// Execute PowerShell Script
+ipcMain.handle('exec-powershell', async (event, command) => {
+  const { exec } = require('child_process');
+  // Use PowerShell explicitly with Bypass policy
+  const psCommand = `powershell.exe -ExecutionPolicy Bypass -Command "${command.replace(/"/g, '\\"')}"`;
+  
+  return new Promise((resolve) => {
+    exec(psCommand, (error, stdout, stderr) => {
+      resolve({ 
+        success: !error, 
+        output: stdout.trim(), 
+        error: stderr.trim() 
+      });
+    });
+  });
+});
 
-// Copy File/Folder
-ipcMain.handle('fs-copy', async (event, { source, destination }) => {
+
+// Launch External App
+ipcMain.handle('launch-app', async (event, { appPath, args = [] }) => {
+  const { spawn } = require('child_process');
   try {
-    const fs = require('fs-extra'); // Need fs-extra for recursive copy
-    await fs.copy(source, destination, { overwrite: true });
+    const subprocess = spawn(appPath, args, {
+      detached: true,
+      stdio: 'ignore'
+    });
+    subprocess.unref();
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-// Delete File/Folder
-ipcMain.handle('fs-delete', async (event, path) => {
+
+// Connect RDP
+ipcMain.handle('connect-rdp', async (event, ip) => {
+  const { exec } = require('child_process');
+  exec(`mstsc /v:${ip}`);
+  return { success: true };
+});
+
+
+// --- FILE OPERATIONS (COPY, DELETE, RENAME) ---
+
+// // Copy File/Folder
+// ipcMain.handle('fs-copy', async (event, { source, destination }) => {
+//   try {
+//     // Normalize paths
+//     const src = path.normalize(source);
+//     const dest = path.normalize(destination);
+
+//     // Check source
+//     if (!fsExtra.existsSync(src)) {
+//         return { success: false, error: `Source not found: ${src}` };
+//     }
+
+//     // Create destination folder if needed
+//     await fsExtra.ensureDir(path.dirname(dest));
+
+//     console.log(`Copying: ${src} -> ${dest}`);
+//     await fsExtra.copy(src, dest, { overwrite: true, errorOnExist: false });
+    
+//     return { success: true };
+//   } catch (error) {
+//     console.error('Copy Error:', error);
+//     return { success: false, error: error.message };
+//   }
+// });
+
+
+// Copy File/Folder Handler (Debug Version)
+ipcMain.handle('fs-copy', async (event, { source, destination }) => {
+  console.log('------------------------------------------------');
+  console.log('📥 COPY REQUEST RECEIVED');
+  console.log('📍 Source Raw:', source);
+  console.log('📍 Dest Raw:', destination);
+
   try {
-    const fs = require('fs-extra');
-    await fs.remove(path);
+    const fsExtra = require('fs-extra');
+    const path = require('path');
+
+    // 1. Normalize Paths
+    const src = path.resolve(source); // Resolve to absolute path
+    const dest = path.resolve(destination); // Resolve to absolute path
+    
+    console.log('✅ Normalized Source:', src);
+    console.log('✅ Normalized Dest:', dest);
+
+    // 2. Check Source Existence
+    if (!fsExtra.existsSync(src)) {
+        console.error('❌ ERROR: Source file does not exist!');
+        return { success: false, error: `Source not found: ${src}` };
+    }
+
+    // 3. Ensure Destination Directory Exists
+    const destDir = path.dirname(dest);
+    console.log('📂 Ensuring directory exists:', destDir);
+    await fsExtra.ensureDir(destDir);
+
+    // 4. Perform Copy
+    console.log('🚀 Starting copy operation...');
+    await fsExtra.copy(src, dest, { overwrite: true, errorOnExist: false });
+    
+    console.log('🎉 Copy Success!');
+    console.log('------------------------------------------------');
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ COPY FAILED:', error);
+    console.log('------------------------------------------------');
+    return { success: false, error: error.message };
+  }
+});
+
+
+// Delete File/Folder
+ipcMain.handle('fs-delete', async (event, targetPath) => {
+  try {
+    await fsExtra.remove(path.normalize(targetPath));
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -198,37 +249,36 @@ ipcMain.handle('fs-delete', async (event, path) => {
 // Rename/Move File/Folder
 ipcMain.handle('fs-rename', async (event, { oldPath, newPath }) => {
   try {
-    const fs = require('fs-extra');
-    await fs.move(oldPath, newPath, { overwrite: true });
+    await fsExtra.move(path.normalize(oldPath), path.normalize(newPath), { overwrite: true });
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-// Check if File Exists
-ipcMain.handle('fs-exists', async (event, path) => {
-  const fs = require('fs');
-  return fs.existsSync(path);
+// Check Exists
+ipcMain.handle('fs-exists', async (event, targetPath) => {
+  return fsExtra.existsSync(path.normalize(targetPath));
 });
 
-// Calculate SHA256 Checksum
+// Checksum
 ipcMain.handle('fs-checksum', async (event, filePath) => {
-  const crypto = require('crypto');
-  const fs = require('fs');
-  
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha256');
-    const stream = fs.createReadStream(filePath);
-    
-    stream.on('error', err => resolve({ success: false, error: err.message }));
-    stream.on('data', chunk => hash.update(chunk));
-    stream.on('end', () => resolve({ success: true, hash: hash.digest('hex') }));
+  return new Promise((resolve) => {
+    try {
+      const hash = crypto.createHash('sha256');
+      const stream = fsExtra.createReadStream(path.normalize(filePath));
+      
+      stream.on('error', err => resolve({ success: false, error: err.message }));
+      stream.on('data', chunk => hash.update(chunk));
+      stream.on('end', () => resolve({ success: true, hash: hash.digest('hex') }));
+    } catch (e) {
+      resolve({ success: false, error: e.message });
+    }
   });
 });
 
-// --- Service Management Handlers ---
 
+// --- SERVICE MANAGEMENT (via node-powershell) ---
 ipcMain.handle('service-manage', async (event, { ip, serviceName, action }) => {
   const ps = new PowerShell({
     executionPolicy: 'Bypass',
@@ -236,7 +286,6 @@ ipcMain.handle('service-manage', async (event, { ip, serviceName, action }) => {
   });
 
   try {
-    // Command to manage service on remote computer
     const command = `
       $service = Get-Service -ComputerName "${ip}" -Name "${serviceName}" -ErrorAction SilentlyContinue;
       if ($service) {

@@ -2,7 +2,7 @@
 
 import { Button, Checkbox, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { useMonitoringStore } from '@/store';
+import { useMonitoringStore, useOperationStore } from '@/store';
 import {
   Activity,
   Copy,
@@ -22,6 +22,7 @@ import {
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
+
 const TopSection = ({
   onAddSystem,
   onAddDestination,
@@ -34,14 +35,13 @@ const TopSection = ({
   onSettings,
 }) => {
   const [path, setPath] = useState('');
-  const [services, setServices] = useState('');
-  const [message, setMessage] = useState('');
   const [stopBefore, setStopBefore] = useState(false);
   const [startAfter, setStartAfter] = useState(false);
   const [sendAfter, setSendAfter] = useState(false);
   const [isServiceRunning, setIsServiceRunning] = useState(false);
 
   const { isMonitoring, startMonitoring, stopMonitoring } = useMonitoringStore();
+  const { destinationPath, setDestinationPath, services, setServices, message, setMessage } = useOperationStore();
 
   const handleToggleMonitoring = () => {
     if (isMonitoring) {
@@ -132,15 +132,15 @@ const TopSection = ({
         <Button onClick={onAddDestination} leftIcon={<Target className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">
           Add Dest
         </Button>
-        <div className="flex-1">
-          <Input 
-            placeholder="Remote Path (e.g., C:\HyperFamily\App)" 
-            value={path} 
-            onChange={(e) => setPath(e.target.value)} 
-            icon={<FolderInput className="w-3.5 h-3.5" />}
-            className="h-8 text-xs"
-          />
-        </div>
+      <div className="flex-1">
+      <Input 
+        placeholder="Remote Path (e.g., C:\HyperFamily\App)" 
+        value={destinationPath} // 👈 Use store value
+        onChange={(e) => setDestinationPath(e.target.value)} // 👈 Update store
+        icon={<FolderInput className="w-3.5 h-3.5" />}
+        className="h-8 text-xs"
+      />
+    </div>
         <Button onClick={onSettings} variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-text-primary">
           <Settings className="w-4 h-4" />
         </Button>

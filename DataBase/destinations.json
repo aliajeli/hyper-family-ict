@@ -8,7 +8,25 @@
       "id": "dest_1771073367399",
       "createdAt": "2026-02-14T12:49:27.399Z",
       "updatedAt": "2026-02-14T12:49:27.399Z"
+    },
+    {
+      "district": "14",
+      "branch": "Lahijan",
+      "name": "Checkout 1",
+      "ip": "172.18.168.32",
+      "id": "dest_1771134366642",
+      "createdAt": "2026-02-15T05:46:06.642Z",
+      "updatedAt": "2026-02-15T05:46:06.642Z"
+    },
+    {
+      "district": "14",
+      "branch": "Lahijan",
+      "name": "Test",
+      "ip": "127.0.0.1",
+      "id": "dest_1771139714245",
+      "createdAt": "2026-02-15T07:15:14.245Z",
+      "updatedAt": "2026-02-15T07:15:14.245Z"
     }
   ],
-  "updatedAt": "2026-02-14T12:49:27.399Z"
+  "updatedAt": "2026-02-15T07:15:14.245Z"
 }

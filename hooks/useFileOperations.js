@@ -1,41 +1,41 @@
-import { useDestinationStore } from '@/store';
-import { useState } from 'react';
-import { useSystemOperations } from './useSystemOperations'; // Import new hook
-
+import { useOperationStore } from '@/store'; // 👈 Import
+import { useRef, useState } from 'react'; // 👈 Import useRef
+import { useSystemOperations } from './useSystemOperations';
 
 export const useFileOperations = () => {
   const { 
     logs, 
     setLogs, 
-    isRunning, 
-    setIsRunning, 
     checkConnection, 
-    copyFile 
+    copyFile,
+    deleteFile
   } = useSystemOperations();
-  
-  const { destinations, selectedDestinations } = useDestinationStore();
 
-  const addLog = (message, type = 'default') => {
-    setLogs(prev => [...prev, { message, type }]);
-  };
+  const [isRunning, setIsRunningState] = useState(false);
+  const isRunningRef = useRef(false); // 👈 Ref for instant access
+  const { destinationPath } = useOperationStore(); // 👈 Get path from store
 
   const startOperation = async (operationType, params) => {
-    setIsRunning(true);
+    // Set both State (for UI) and Ref (for Logic)
+    setIsRunningState(true);
+    isRunningRef.current = true;
+    
     setLogs([]);
     
-    // Get selected destinations or use mock if empty
-    const targets = selectedDestinations.length > 0 
-      ? destinations.filter(d => selectedDestinations.includes(d.id))
-      : [
-          { branch: 'Lahijan', name: 'Mock-PC', ip: '127.0.0.1' } // Localhost for testing
-        ];
+    const targets = params.targets || [];
+    console.log('Targets count:', targets.length);
 
     for (const target of targets) {
-      if (!isRunning) break; 
+      // Check Ref instead of State
+      if (!isRunningRef.current) { 
+         console.warn('Stopped by user');
+         break; 
+      }
 
       const prefix = `[${target.branch}-${target.name}]`;
+      console.log('Processing target:', target.name);
 
-      // 1. Check Connection (Real Ping)
+      // 2. Check Connection
       const isOnline = await checkConnection(target.ip);
       
       if (!isOnline) {
@@ -43,30 +43,41 @@ export const useFileOperations = () => {
         continue;
       }
 
-      // 2. Perform Operation
-      if (operationType === 'copy') {
-        const files = params; // array of files
-        for (const file of files) {
-           // Default path C:\HyperFamily\Downloads
-           await copyFile(file.path, target.ip, 'HyperFamily\\Downloads');
-        }
+      // 3. Perform Operation
+      try {
+          if (operationType === 'copy') {
+            const files = params.files || [];
+            for (const file of files) {
+               if (!isRunningRef.current) break; // Check again inside inner loop
+                         // 👇 Use dynamic path from store
+               // If path is empty, default to C:\HyperFamily\Downloads
+               const dest = destinationPath || 'HyperFamily\\Downloads';
+               await copyFile(file.path, target.ip, dest);
+            }
+          } 
+          else if (operationType === 'delete') {
+             // ... delete logic ...
+          }
+      } catch (err) {
+          setLogs(prev => [...prev, { message: `${prefix} Error: ${err.message}`, type: 'error' }]);
       }
-      
-      // ... handle other operations ...
     }
 
     setLogs(prev => [...prev, { message: 'Operation Completed.', type: 'info' }]);
-    setIsRunning(false);
+    
+    setIsRunningState(false);
+    isRunningRef.current = false;
   };
 
   const stopOperation = () => {
-    setIsRunning(false);
+    setIsRunningState(false);
+    isRunningRef.current = false; // Stop immediately
     setLogs(prev => [...prev, { message: 'Stopped by user.', type: 'warning' }]);
   };
 
   return {
     logs,
-    isRunning,
+    isRunning, // Return state for UI buttons
     startOperation,
     stopOperation
   };
