@@ -1,4 +1,14 @@
 {
-  "data": [],
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "data": [
+    {
+      "district": "14",
+      "branch": "Lahijan",
+      "name": "Checkout 1",
+      "ip": "172.18.168.32",
+      "id": "dest_1771073367399",
+      "createdAt": "2026-02-14T12:49:27.399Z",
+      "updatedAt": "2026-02-14T12:49:27.399Z"
+    }
+  ],
+  "updatedAt": "2026-02-14T12:49:27.399Z"
 }

@@ -22,4 +22,12 @@ contextBridge.exposeInMainWorld('electron', {
   
   // App Info
   platform: process.platform,
+
+    // File Operations
+  copy: (source, destination) => ipcRenderer.invoke('fs-copy', { source, destination }),
+  delete: (path) => ipcRenderer.invoke('fs-delete', path),
+  rename: (oldPath, newPath) => ipcRenderer.invoke('fs-rename', { oldPath, newPath }),
+  exists: (path) => ipcRenderer.invoke('fs-exists', path),
+  checksum: (path) => ipcRenderer.invoke('fs-checksum', path),
+
 });

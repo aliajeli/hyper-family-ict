@@ -13,6 +13,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.34.0",
+    "fs-extra": "^11.3.3",
     "lowdb": "^7.0.1",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",

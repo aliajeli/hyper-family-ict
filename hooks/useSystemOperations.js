@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 
 export const useSystemOperations = () => {
   const [logs, setLogs] = useState([]);
@@ -10,12 +9,12 @@ export const useSystemOperations = () => {
   };
 
   const checkConnection = async (ip) => {
-    if (!window.electron) return true; // Mock for browser
-    
+    if (!window.electron) return true; 
     addLog(`Pinging ${ip}...`, 'default');
-    const result = await window.electron.powershell(`Test-Connection -ComputerName ${ip} -Count 1 -Quiet`);
+    // Using simple ping for speed
+    const result = await window.electron.exec(`ping -n 1 ${ip}`);
     
-    if (result.output.includes('True')) {
+    if (result.success && !result.output.includes('Unreachable') && !result.output.includes('timed out')) {
       addLog(`${ip} is Online`, 'success');
       return true;
     } else {
@@ -26,38 +25,49 @@ export const useSystemOperations = () => {
 
   const copyFile = async (sourcePath, destIp, destPath) => {
     if (!window.electron) {
-      addLog(`[Mock] Copying ${sourcePath} to \\\\${destIp}\\${destPath}`, 'info');
-      await new Promise(r => setTimeout(r, 1000));
+      addLog(`[Mock] Copied to ${destIp}`, 'success');
       return true;
     }
 
-    // Convert local path to UNC path if needed, or mapping
-    // Simple copy command
-    const command = `Copy-Item -Path "${sourcePath}" -Destination "\\\\${destIp}\\C$\\${destPath}" -Recurse -Force`;
+    // Construct UNC Path: \\192.168.1.10\C$\Path\To\Dest
+    // Assuming C$ share is enabled and accessible
+    const uncDest = `\\\\${destIp}\\C$\\${destPath}`;
     
-    addLog(`Copying to ${destIp}...`, 'info');
-    const result = await window.electron.powershell(command);
+    addLog(`Copying to ${uncDest}...`, 'info');
+    const result = await window.electron.copy(sourcePath, uncDest);
     
     if (result.success) {
-      addLog(`Successfully copied to ${destIp}`, 'success');
+      addLog(`Success: Copied to ${destIp}`, 'success');
+      
+      // Verify Checksum (Optional - takes time)
+      // addLog(`Verifying checksum...`, 'info');
+      // const localHash = await window.electron.checksum(sourcePath);
+      // const remoteHash = await window.electron.checksum(uncDest);
+      // if (localHash.hash === remoteHash.hash) {
+      //    addLog(`Verified: Checksum Matched`, 'success');
+      // }
+      
       return true;
     } else {
-      addLog(`Failed to copy to ${destIp}: ${result.error}`, 'error');
+      addLog(`Error: ${result.error}`, 'error');
       return false;
     }
   };
 
-  const manageService = async (ip, serviceName, action) => { // action: Start or Stop
-    const command = `Get-Service -ComputerName ${ip} -Name ${serviceName} | ${action}-Service`;
-    addLog(`${action}ing service ${serviceName} on ${ip}...`, 'warning');
+  const deleteFile = async (destIp, destPath) => {
+    const uncPath = `\\\\${destIp}\\C$\\${destPath}`;
+    addLog(`Deleting ${uncPath}...`, 'warning');
     
-    if (!window.electron) {
-      await new Promise(r => setTimeout(r, 500));
-      return true;
-    }
+    if (!window.electron) return true;
 
-    const result = await window.electron.powershell(command);
-    return result.success;
+    const result = await window.electron.delete(uncPath);
+    if (result.success) {
+      addLog(`Deleted: ${destIp}`, 'success');
+      return true;
+    } else {
+      addLog(`Error: ${result.error}`, 'error');
+      return false;
+    }
   };
 
   return {
@@ -67,6 +77,6 @@ export const useSystemOperations = () => {
     setLogs,
     checkConnection,
     copyFile,
-    manageService
+    deleteFile
   };
 };

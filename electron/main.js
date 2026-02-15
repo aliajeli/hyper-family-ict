@@ -165,3 +165,61 @@ ipcMain.handle('exec-command', async (event, command) => {
     });
   });
 });
+
+// ... existing code ...
+
+// --- File Operations Handlers ---
+
+// Copy File/Folder
+ipcMain.handle('fs-copy', async (event, { source, destination }) => {
+  try {
+    const fs = require('fs-extra'); // Need fs-extra for recursive copy
+    await fs.copy(source, destination, { overwrite: true });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Delete File/Folder
+ipcMain.handle('fs-delete', async (event, path) => {
+  try {
+    const fs = require('fs-extra');
+    await fs.remove(path);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Rename/Move File/Folder
+ipcMain.handle('fs-rename', async (event, { oldPath, newPath }) => {
+  try {
+    const fs = require('fs-extra');
+    await fs.move(oldPath, newPath, { overwrite: true });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Check if File Exists
+ipcMain.handle('fs-exists', async (event, path) => {
+  const fs = require('fs');
+  return fs.existsSync(path);
+});
+
+// Calculate SHA256 Checksum
+ipcMain.handle('fs-checksum', async (event, filePath) => {
+  const crypto = require('crypto');
+  const fs = require('fs');
+  
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(filePath);
+    
+    stream.on('error', err => resolve({ success: false, error: err.message }));
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('end', () => resolve({ success: true, hash: hash.digest('hex') }));
+  });
+});
