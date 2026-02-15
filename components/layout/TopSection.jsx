@@ -34,15 +34,18 @@ const TopSection = ({
   onAbout,
   onSettings,
 }) => {
-  const [path, setPath] = useState('');
-  const [stopBefore, setStopBefore] = useState(false);
-  const [startAfter, setStartAfter] = useState(false);
-  const [sendAfter, setSendAfter] = useState(false);
+
   const [isServiceRunning, setIsServiceRunning] = useState(false);
 
   const { isMonitoring, startMonitoring, stopMonitoring } = useMonitoringStore();
-  const { destinationPath, setDestinationPath, services, setServices, message, setMessage } = useOperationStore();
-
+  const { 
+    destinationPath, setDestinationPath, 
+    services, setServices, 
+    message, setMessage,
+    stopBefore, setStopBefore, // 👈 مهم
+    startAfter, setStartAfter, // 👈 مهم
+    sendAfter, setSendAfter    // 👈 مهم
+  } = useOperationStore();
   const handleToggleMonitoring = () => {
     if (isMonitoring) {
       stopMonitoring();

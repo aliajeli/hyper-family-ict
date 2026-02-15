@@ -278,36 +278,100 @@ ipcMain.handle('fs-checksum', async (event, filePath) => {
 });
 
 
-// --- SERVICE MANAGEMENT (via node-powershell) ---
-ipcMain.handle('service-manage', async (event, { ip, serviceName, action }) => {
-  const ps = new PowerShell({
-    executionPolicy: 'Bypass',
-    noProfile: true,
-  });
 
+// Check Remote File Exists (Direct check via SMB)
+ipcMain.handle('fs-exists-remote', async (event, path) => {
+  const fs = require('fs');
   try {
-    const command = `
-      $service = Get-Service -ComputerName "${ip}" -Name "${serviceName}" -ErrorAction SilentlyContinue;
-      if ($service) {
-        if ("${action}" -eq "start") {
-          Start-Service -InputObject $service;
-          Write-Output "Service started";
-        } elseif ("${action}" -eq "stop") {
-          Stop-Service -InputObject $service;
-          Write-Output "Service stopped";
-        }
-      } else {
-        Write-Error "Service not found";
-      }
-    `;
-
-    await ps.addCommand(command);
-    const result = await ps.invoke();
-    await ps.dispose();
+    // Normalize path for Windows
+    const normalizedPath = path.replace(/\//g, '\\');
     
-    return { success: true, output: result };
-  } catch (err) {
-    await ps.dispose();
-    return { success: false, error: err.message };
+    // fs.accessSync throws if file doesn't exist or no permission
+    fs.accessSync(normalizedPath, fs.constants.F_OK);
+    return true;
+  } catch (e) {
+    return false;
   }
+});
+
+// Calculate Remote Hash (Direct Read via SMB)
+ipcMain.handle('fs-hash-remote', async (event, path) => {
+  const crypto = require('crypto');
+  const fs = require('fs');
+  
+  return new Promise((resolve) => {
+    try {
+      // Normalize path for Windows
+      const normalizedPath = path.replace(/\//g, '\\');
+      
+      const hash = crypto.createHash('sha256');
+      const stream = fs.createReadStream(normalizedPath);
+      
+      stream.on('error', err => {
+        console.error('Remote Hash Error:', err);
+        resolve({ success: false, error: err.message });
+      });
+      
+      stream.on('data', chunk => hash.update(chunk));
+      
+      stream.on('end', () => {
+        resolve({ success: true, hash: hash.digest('hex') });
+      });
+      
+    } catch (e) {
+      resolve({ success: false, error: e.message });
+    }
+  });
+});
+
+// Service Management (Debug)
+ipcMain.handle('service-manage', async (event, { ip, serviceName, action }) => {
+  const { exec } = require('child_process');
+  const command = `sc \\\\${ip} ${action} "${serviceName}"`;
+  
+  console.log(`📡 Executing: ${command}`); // Log Command
+
+  return new Promise((resolve) => {
+    exec(command, (error, stdout, stderr) => {
+      console.log('🔹 SC STDOUT:', stdout);
+      console.log('🔸 SC STDERR:', stderr);
+      console.log('🔻 SC ERROR:', error ? error.message : 'None');
+
+      // اگر خروجی شامل کلمات کلیدی موفقیت بود، قبول کن
+      // 1062 = Service has not been started (یعنی قبلاً استاپ بوده، پس موفق فرض می‌کنیم)
+      // 1056 = An instance of the service is already running (یعنی قبلاً استارت بوده، پس موفق فرض می‌کنیم)
+      
+      if (!error || stdout.includes('PENDING') || stdout.includes('SUCCESS')) {
+        resolve({ success: true, output: stdout });
+      } else {
+        // Handle "Already running" or "Already stopped" as success
+        if (stdout.includes('1062') || stdout.includes('1056')) {
+             resolve({ success: true, output: "Already in desired state" });
+        } else {
+             resolve({ success: false, error: stderr || stdout || error.message });
+        }
+      }
+    });
+  });
+});
+
+// Send Message (Debug)
+ipcMain.handle('send-msg', async (event, { ip, message }) => {
+  const { exec } = require('child_process');
+  const command = `msg * /server:${ip} "${message}"`;
+  
+  console.log(`📡 Executing: ${command}`);
+
+  return new Promise((resolve) => {
+    exec(command, (error, stdout, stderr) => {
+      console.log('🔹 MSG STDOUT:', stdout);
+      console.log('🔸 MSG STDERR:', stderr);
+      
+      if (error) {
+        resolve({ success: false, error: stderr || error.message });
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
 });

@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('electron', {
   launchApp: (appPath, args) => ipcRenderer.invoke('launch-app', { appPath, args }),
   connectRDP: (ip) => ipcRenderer.invoke('connect-rdp', ip),
 
+    existsRemote: (path) => ipcRenderer.invoke('fs-exists-remote', path),
+  hashRemote: (path) => ipcRenderer.invoke('fs-hash-remote', path),
+  sendMsg: (ip, message) => ipcRenderer.invoke('send-msg', { ip, message }),
 
   // File System
   readDir: (path) => ipcRenderer.invoke('fs-read-dir', path),

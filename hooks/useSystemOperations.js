@@ -1,143 +1,135 @@
 import { useState } from 'react';
 
-// 👇 این خط export بسیار مهم است
 export const useSystemOperations = () => {
   const [logs, setLogs] = useState([]);
-  const [isRunning, setIsRunning] = useState(false);
 
+  // Helper for adding logs
   const addLog = (message, type = 'default') => {
-    console.log(`📝 LOG: ${message}`);
+    // types: default (white), info (blue), success (green), warning (yellow), error (red)
+    console.log(`[${type.toUpperCase()}] ${message}`);
     setLogs(prev => [...prev, { message, type }]);
   };
 
-  // --- 1. Check Connection (Ping) ---
-  const checkConnection = async (ip) => {
-    if (!window.electron) return true;
-
-    addLog(`Pinging ${ip}...`, 'default');
-    
-    try {
-        const result = await window.electron.exec(`ping -n 1 ${ip}`);
+  // 1. Check Ping
+  const checkPing = async (ip, retries = 3) => {
+    for (let i = 1; i <= retries; i++) {
+      // فقط دفعه اول یا اگر خطا خورد لاگ بزن
+      if (i > 1) addLog(`Connection attempt ${i}/${retries}...`, 'warning');
+      
+      try {
+        if (!window.electron) return true;
+        const res = await window.electron.exec(`ping -n 1 ${ip}`);
         
-        if (result.success && !result.output.includes('Unreachable') && !result.output.includes('timed out')) {
+        if (res.success && !res.output.includes('Unreachable') && !res.output.includes('timed out')) {
           addLog(`${ip} is Online`, 'success');
           return true;
-        } else {
-          addLog(`${ip} is Offline`, 'error');
-          return false;
         }
-    } catch (e) {
-        addLog(`Ping Error: ${e.message}`, 'error');
-        return false;
+      } catch (e) {}
+
+      if (i < retries) await new Promise(r => setTimeout(r, 1500));
     }
+    
+    addLog(`${ip} is Offline. Skipping.`, 'error');
+    return false;
   };
 
-  // --- 2. Copy File (Network Only) ---
-  const copyFile = async (sourcePath, destIp, destPath) => {
-    console.log('----------------------------------------');
-    console.log('🔄 COPY START');
-    console.log('📂 Src:', sourcePath);
-    console.log('🎯 IP:', destIp);
-    console.log('📂 User Path:', destPath);
+  // 2. Manage Service
+  const manageService = async (ip, serviceName, action) => {
+       console.log(`🔧 Calling Service Manager: ${action} ${serviceName} on ${ip}`); // 👈 این لاگ را اضافه کنید
 
-    if (!window.electron) {
-        addLog('Error: Electron API not available', 'error');
-        return false;
-    }
+    // لاگ کمتر: فقط نتیجه نهایی را بگو
+    if (!window.electron) return true;
 
-    // استخراج نام فایل
-    const fileName = sourcePath.split(/[/\\]/).pop();
-
-    // مسیر پیش‌فرض
-    let targetPath = destPath || 'HyperFamily\\Downloads';
-    let targetDrive = 'C$'; // پیش‌فرض C$
-
-    // اگر کاربر درایو مشخص کرده باشد (مثلاً D:\Data)
-    // باید تبدیل شود به D$\Data
-    if (targetPath.includes(':')) {
-        const parts = targetPath.split(':');
-        const driveLetter = parts[0].toUpperCase(); // D
-        targetDrive = `${driveLetter}$`; // D$
-        targetPath = parts[1]; // \Data
-    }
-
-    // حذف بک‌اسلش‌های اضافی اول و آخر مسیر
-    targetPath = targetPath.replace(/^[\/\\]+|[\/\\]+$/g, '');
-
-    // ساخت مسیر نهایی شبکه (UNC Path)
-    // فرمت: \\IP\Drive$\Path\FileName
-    const fullDest = `\\\\${destIp}\\${targetDrive}\\${targetPath}\\${fileName}`;
-    
-    console.log('🌐 Network Path Constructed:', fullDest);
-    addLog(`Copying ${fileName} to ${fullDest}...`, 'info');
-    
-    try {
-      console.log('🚀 Invoking Electron IPC: fs-copy');
-      const result = await window.electron.copy(sourcePath, fullDest);
-      console.log('✅ Result from Electron:', result);
-
-      if (result.success) {
-        addLog(`Success: Copied to ${destIp}`, 'success');
-        return true;
-      } else {
-        console.error('❌ Copy Failed:', result.error);
-        addLog(`Error copying to ${destIp}: ${result.error}`, 'error');
-        return false;
-      }
-    } catch (error) {
-      console.error('💥 Exception during copy:', error);
-      addLog(`Exception: ${error.message}`, 'error');
+    const res = await window.electron.manageService(ip, serviceName, action);
+    if (res.success) {
+      addLog(`Service ${serviceName} ${action}ed`, 'success');
+      return true;
+    } else {
+      addLog(`Failed to ${action} ${serviceName}: ${res.error}`, 'error');
       return false;
     }
   };
 
-  // --- 3. Delete File ---
-  const deleteFile = async (destIp, destPath) => {
-    // تبدیل مسیر ساده به UNC Path برای حذف
-    // فرض: destPath شامل نام فایل است
-    
-    let targetPath = destPath;
-    let targetDrive = 'C$';
+  // 3. Send Message
+  const sendMessage = async (ip, message) => {
+    if (!window.electron) return true;
+    const res = await window.electron.sendMsg(ip, message);
+    if (res.success) {
+      addLog(`Message sent to ${ip}`, 'success');
+      return true;
+    } else {
+      addLog(`Message failed: ${res.error}`, 'error');
+      return false;
+    }
+  };
 
+  // 4. File Operations (Copy + Verify)
+  const copyFileSecure = async (src, destIp, destPath) => {
+    const fileName = src.split(/[/\\]/).pop();
+    
+    // Build UNC Path
+    let targetPath = destPath || 'HyperFamily\\Downloads';
+    let targetDrive = 'C$';
     if (targetPath.includes(':')) {
         const parts = targetPath.split(':');
         targetDrive = `${parts[0].toUpperCase()}$`;
         targetPath = parts[1];
     }
-    
     targetPath = targetPath.replace(/^[\/\\]+|[\/\\]+$/g, '');
-    const uncPath = `\\\\${destIp}\\${targetDrive}\\${targetPath}`;
+    const fullDest = `\\\\${destIp}\\${targetDrive}\\${targetPath}\\${fileName}`;
 
-    addLog(`Deleting ${uncPath}...`, 'warning');
+    // A. Check Exists
+     const exists = await window.electron.existsRemote(fullDest);
     
-    if (!window.electron) return true;
-
-    const result = await window.electron.delete(uncPath);
-    if (result.success) {
-      addLog(`Deleted from ${destIp}`, 'success');
-      return true;
+    if (exists) {
+        addLog(`File ${fileName} already exists. Skipped.`, 'error'); // قرمز
+        return 'skipped'; // مقدار بازگشتی خاص
     } else {
-      addLog(`Error deleting: ${result.error}`, 'error');
-      return false;
+        addLog(`File does not exist. Proceeding...`, 'success'); // سبز 
+    }
+
+    // B. Copy
+    addLog(`Copying ${fileName}...`, 'default'); // رنگ سفید برای شروع
+    const copyRes = await window.electron.copy(src, fullDest);
+    
+    if (!copyRes.success) {
+        addLog(`Copy Failed: ${copyRes.error}`, 'error');
+        return false;
+    }
+
+    // مکث کوتاه برای اطمینان از نوشتن فایل روی دیسک مقصد
+    await new Promise(r => setTimeout(r, 1000));
+
+    // C. Verify Hash
+    // addLog(`Verifying...`, 'default'); // این خط را حذف کردیم تا شلوغ نشود
+    
+    // Calculate local hash
+    const localHash = await window.electron.checksum(src);
+    
+    // Calculate remote hash (Reading back the file over network)
+    const remoteHash = await window.electron.hashRemote(fullDest);
+
+    if (localHash.success && remoteHash.success) {
+        if (localHash.hash === remoteHash.hash) {
+            addLog(`${fileName} Verified (SHA256 Match)`, 'success');
+            return true;
+        } else {
+            addLog(`Hash Mismatch! Retrying...`, 'error');
+            return 'retry'; 
+        }
+    } else {
+        addLog(`Verification Failed: ${remoteHash.error || localHash.error}`, 'error');
+        return 'retry'; 
     }
   };
 
-  // --- 4. Service Management ---
-  const manageService = async (ip, serviceName, action) => {
-      // این بخش در TopSection مستقیماً صدا زده می‌شود
-      // اما اگر بخواهید اینجا باشد:
-      return await window.electron.manageService(ip, serviceName, action);
-  };
-
-  // بازگرداندن توابع و متغیرها
   return {
     logs,
-    isRunning,
-    setIsRunning,
     setLogs,
-    checkConnection,
-    copyFile,
-    deleteFile,
-    manageService
+    addLog,
+    checkPing,
+    manageService,
+    sendMessage,
+    copyFileSecure
   };
 };
