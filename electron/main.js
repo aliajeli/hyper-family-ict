@@ -3,6 +3,9 @@ const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
 
+const { PowerShell } = require('node-powershell');
+
+
 let mainWindow;
 
 function createWindow() {
@@ -222,4 +225,40 @@ ipcMain.handle('fs-checksum', async (event, filePath) => {
     stream.on('data', chunk => hash.update(chunk));
     stream.on('end', () => resolve({ success: true, hash: hash.digest('hex') }));
   });
+});
+
+// --- Service Management Handlers ---
+
+ipcMain.handle('service-manage', async (event, { ip, serviceName, action }) => {
+  const ps = new PowerShell({
+    executionPolicy: 'Bypass',
+    noProfile: true,
+  });
+
+  try {
+    // Command to manage service on remote computer
+    const command = `
+      $service = Get-Service -ComputerName "${ip}" -Name "${serviceName}" -ErrorAction SilentlyContinue;
+      if ($service) {
+        if ("${action}" -eq "start") {
+          Start-Service -InputObject $service;
+          Write-Output "Service started";
+        } elseif ("${action}" -eq "stop") {
+          Stop-Service -InputObject $service;
+          Write-Output "Service stopped";
+        }
+      } else {
+        Write-Error "Service not found";
+      }
+    `;
+
+    await ps.addCommand(command);
+    const result = await ps.invoke();
+    await ps.dispose();
+    
+    return { success: true, output: result };
+  } catch (err) {
+    await ps.dispose();
+    return { success: false, error: err.message };
+  }
 });

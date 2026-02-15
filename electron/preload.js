@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld('electron', {
 
   // PowerShell
   powershell: (command) => ipcRenderer.invoke('exec-powershell', command),
+
+    // Service Management
+  manageService: (ip, serviceName, action) => 
+    ipcRenderer.invoke('service-manage', { ip, serviceName, action }),
   
   // Launch Apps
   launchApp: (appPath, args) => ipcRenderer.invoke('launch-app', { appPath, args }),
