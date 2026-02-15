@@ -375,3 +375,18 @@ ipcMain.handle('send-msg', async (event, { ip, message }) => {
     });
   });
 });
+
+// Append to Log File
+ipcMain.handle('fs-append-log', async (event, message) => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  // فایل لاگ در کنار فایل اجرایی یا روت پروژه
+  const logPath = path.join(app.getPath('userData'), 'operation_history.log');
+  const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
+  const logLine = `[${timestamp}] ${message}\n`;
+
+  fs.appendFile(logPath, logLine, (err) => {
+    if (err) console.error('Failed to write log:', err);
+  });
+});

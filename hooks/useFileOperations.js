@@ -1,116 +1,173 @@
-import { useOperationStore } from '@/store';
-import { useRef, useState } from 'react';
-import { useSystemOperations } from './useSystemOperations';
+import { useOperationStore } from "@/store";
+import { useRef, useState } from "react";
+import { useSystemOperations } from "./useSystemOperations";
 
 export const useFileOperations = () => {
-  const { 
-    logs, 
-    setLogs, 
-    addLog, 
-    checkPing, 
-    manageService, 
-    sendMessage, 
-    copyFileSecure 
+  const {
+    logs,
+    clearLogs, // 👈
+    addLog,
+    checkPing,
+    manageService,
+    sendMessage,
+    copyFileSecure,
   } = useSystemOperations();
 
-  const { destinationPath, services, message, stopBefore, startAfter, sendAfter } = useOperationStore();
+  const {
+    destinationPath,
+    services,
+    message,
+    stopBefore,
+    startAfter,
+    sendAfter,
+  } = useOperationStore();
+
   const [isRunning, setIsRunningState] = useState(false);
+  const [reportData, setReportData] = useState([]); // 👈 Store results
   const isRunningRef = useRef(false);
 
   const startOperation = async (operationType, params) => {
     setIsRunningState(true);
     isRunningRef.current = true;
-    setLogs([]);
+
+    // Clear previous logs and report
+    clearLogs();
+    setReportData([]);
+    let currentReport = []; // Local var for accumulation
 
     const targets = params.targets || [];
     const files = params.files || [];
-const serviceList = services ? services.split(',').map(s => s.trim()).filter(s => s) : [];
+    const serviceList = services
+      ? services
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s)
+      : [];
 
-
-
-
-
+    // Helper to add report
+    const addToReport = (target, file, status, msg) => {
+      const entry = { target, file, status, message: msg };
+      currentReport.push(entry);
+      // We update state immediately so UI *could* show progress, or wait till end
+      // setReportData([...currentReport]);
+    };
 
     for (const target of targets) {
       if (!isRunningRef.current) break;
 
-      addLog(`----------------------------------------`, 'default');
-      addLog(`Processing System: [${target.branch}] ${target.name} (${target.ip})`, 'info');
+      addLog(`----------------------------------------`, "default");
+      addLog(
+        `Processing System: [${target.branch}] ${target.name} (${target.ip})`,
+        "info",
+      );
 
-      // 1 & 2. Check Connection (3 Retries)
+      // 1. Check Ping
       const isOnline = await checkPing(target.ip, 3);
-      if (!isOnline) continue; // Go to next system
+      if (!isOnline) {
+        addToReport(target.ip, "-", "error", "Offline / Unreachable");
+        continue;
+      }
 
-      // 5. Stop Services (If checked)
+      // 5. Stop Services
       if (stopBefore && serviceList.length > 0) {
-                console.log('🛑 Stopping services:', serviceList); // 👈 این لاگ را اضافه کنید
         for (const srv of serviceList) {
-           await manageService(target.ip, srv, 'stop');
+          const res = await manageService(target.ip, srv, "stop");
+          if (!res)
+            addToReport(
+              target.ip,
+              `Service: ${srv}`,
+              "error",
+              "Failed to stop",
+            );
         }
       }
 
-      // 3, 4, 6, 7. File Operations Loop
-      if (operationType === 'copy') {
+      // File Operations
+      if (operationType === "copy") {
         for (const file of files) {
-           if (!isRunningRef.current) break;
+          if (!isRunningRef.current) break;
 
-           let attempts = 0;
-           let success = false;
+          let attempts = 0;
+          let success = false;
+          let finalMsg = "";
 
-           // Retry Logic for Copy (Step 7-1)
-while (attempts < 2 && !success) { 
-               const result = await copyFileSecure(file.path, target.ip, destinationPath);
-               
-               if (result === true) {
-                   success = true;
-               } else if (result === 'skipped') {
-                   // اگر فایل وجود داشت، موفقیت نیست ولی کار تمام است.
-                   // می‌رویم سراغ فایل بعدی (حلقه while می‌شکند)
-                   success = true; 
-               } else if (result === 'retry') {
-                   addLog(`Retrying copy operation for ${file.name}...`, 'warning');
-                   attempts++;
-               } else {
-                   break; // Fatal error
-               }
-           }
+          while (attempts < 2 && !success) {
+            const result = await copyFileSecure(
+              file.path,
+              target.ip,
+              destinationPath,
+            );
+
+            if (result === true) {
+              success = true;
+              addToReport(target.ip, file.name, "success", "Copied & Verified");
+            } else if (result === "skipped") {
+              success = true;
+              addToReport(target.ip, file.name, "skipped", "File exists");
+            } else if (result === "retry") {
+              addLog(`Retrying...`, "warning");
+              attempts++;
+              finalMsg = "Verification/Copy Failed";
+            } else {
+              finalMsg = "Copy Error";
+              break;
+            }
+          }
+
+          if (!success) {
+            addToReport(target.ip, file.name, "error", finalMsg);
+          }
         }
       }
 
-      // 8. Start Services (If checked or Start After)
+      // 8. Start Services
       if (startAfter && serviceList.length > 0) {
-                 console.log('🟢 Starting services:', serviceList); // 👈 این لاگ را اضافه کنید
-
-         for (const srv of serviceList) {
-            // Retry logic for services (Step 8)
-            let srvStarted = false;
-            for(let k=0; k<3; k++) {
-                if(await manageService(target.ip, srv, 'start')) {
-                    srvStarted = true;
-                    break;
-                }
-                await new Promise(r => setTimeout(r, 1000));
+        for (const srv of serviceList) {
+          let started = false;
+          for (let k = 0; k < 3; k++) {
+            if (await manageService(target.ip, srv, "start")) {
+              started = true;
+              break;
             }
-            if(!srvStarted) addLog(`Could not start service ${srv} after 3 attempts`, 'error');
-         }
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+          if (!started)
+            addToReport(
+              target.ip,
+              `Service: ${srv}`,
+              "error",
+              "Failed to start",
+            );
+        }
       }
 
-      // 9 & 10. Send Message
+      // Message
       if (sendAfter && message) {
-         await sendMessage(target.ip, message);
+        await sendMessage(target.ip, message);
       }
     }
 
-    addLog('All Operations Completed.', 'info');
+    addLog("All Operations Completed.", "info");
+
+    setReportData(currentReport); // Update final report data
     setIsRunningState(false);
     isRunningRef.current = false;
+
+    return true; // Signal completion
   };
 
   const stopOperation = () => {
     setIsRunningState(false);
     isRunningRef.current = false;
-    addLog('Operation Stopped by User.', 'error');
+    addLog("Operation Stopped by User.", "error");
   };
 
-  return { logs, isRunning, startOperation, stopOperation };
+  return {
+    logs,
+    isRunning,
+    startOperation,
+    stopOperation,
+    reportData, // 👈 Export report data
+    clearLogs,
+  };
 };
