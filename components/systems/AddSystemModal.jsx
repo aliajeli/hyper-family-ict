@@ -24,7 +24,6 @@ import {
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-// ... (Constants same as before) ...
 const deviceTypes = [
   { value: "Router", label: "Router", icon: Router, color: "text-orange-400" },
   { value: "Switch", label: "Switch", icon: Network, color: "text-blue-400" },
@@ -43,6 +42,7 @@ const deviceTypes = [
     color: "text-amber-400",
   },
 ];
+
 const serverSubTypes = ["Kyan", "ESXi", "iLO"];
 const branches = ["Lahijan", "Ramsar", "Nowshahr", "Royan"];
 
@@ -51,7 +51,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState("add");
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [expandedBranches, setExpandedBranches] = useState(branches); // All open by default
+  const [expandedBranches, setExpandedBranches] = useState(branches);
 
   const [formData, setFormData] = useState({
     branch: "Lahijan",
@@ -74,7 +74,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
       status: "unknown",
     });
     setIsLoading(false);
-    toast.success("Added");
+    toast.success("System Added");
     setFormData({ ...formData, name: "", ip: "" });
   };
 
@@ -86,12 +86,20 @@ const AddSystemModal = ({ isOpen, onClose }) => {
     );
   };
 
-  // Grouping Logic
+  const handleDelete = async (id) => {
+    if (confirm("Delete this system?")) {
+      await deleteSystem(id);
+      toast.success("Deleted");
+    }
+  };
+
+  // Safe Filtering Logic
   const filteredSystems = systems.filter(
     (sys) =>
-      sys.name.toLowerCase().includes(search.toLowerCase()) ||
-      sys.ip.includes(search),
+      (sys.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (sys.ip || "").includes(search),
   );
+
   const groupedSystems = branches.reduce((acc, branch) => {
     acc[branch] = filteredSystems.filter((s) => s.branch === branch);
     return acc;
@@ -105,8 +113,8 @@ const AddSystemModal = ({ isOpen, onClose }) => {
       size="lg"
       className="bg-[#0f172a] border-slate-700 h-[550px] flex flex-col p-0 overflow-hidden"
     >
-      {/* TABS (Compact) */}
-      <div className="flex border-b border-slate-700 bg-[#1e293b]/50 px-3 pt-2">
+      {/* TABS */}
+      <div className="flex border-b border-slate-700 bg-[#1e293b]/50 px-3 pt-2 shrink-0">
         <button
           onClick={() => setActiveTab("add")}
           className={cn(
@@ -138,7 +146,6 @@ const AddSystemModal = ({ isOpen, onClose }) => {
         {/* === TAB 1: ADD === */}
         {activeTab === "add" && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Branch (Compact Grid) */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
                 Location
@@ -162,7 +169,6 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* Type (Compact Grid) */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
                 Type
@@ -195,7 +201,6 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* SubType */}
             {formData.type === "Server" && (
               <div className="flex gap-2 bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
                 {serverSubTypes.map((sub) => (
@@ -216,7 +221,6 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            {/* Inputs */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">
@@ -258,7 +262,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
           </form>
         )}
 
-        {/* === TAB 2: MANAGE (Grouped) === */}
+        {/* === TAB 2: MANAGE === */}
         {activeTab === "manage" && (
           <div className="flex flex-col h-full gap-3">
             <div className="relative shrink-0">
@@ -267,14 +271,14 @@ const AddSystemModal = ({ isOpen, onClose }) => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-xs text-slate-200 focus:border-emerald-500 focus:outline-none"
-                placeholder="Search..."
+                placeholder="Search systems..."
               />
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
               {branches.map((branch) => {
                 const items = groupedSystems[branch] || [];
-                if (items.length === 0 && search) return null; // Hide empty if searching
+                if (items.length === 0 && search) return null;
                 const isExpanded = expandedBranches.includes(branch);
 
                 return (
@@ -295,7 +299,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
                         <span className="text-xs font-bold text-slate-300">
                           {branch}
                         </span>
-                        <span className="text-[10px] bg-slate-700 text-slate-400 px-1.5 rounded">
+                        <span className="text-[9px] bg-slate-700 text-slate-400 px-1.5 rounded">
                           {items.length}
                         </span>
                       </div>
@@ -321,7 +325,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
                             </div>
                             <div className="col-span-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
-                                onClick={() => deleteSystem(sys.id)}
+                                onClick={() => handleDelete(sys.id)}
                                 className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

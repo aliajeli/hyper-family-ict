@@ -179,15 +179,23 @@ ipcMain.handle("fs-copy", async (event, { source, destination }) => {
 });
 
 // Delete File/Folder
+// Delete File/Folder
 ipcMain.handle("fs-delete", async (event, targetPath) => {
   try {
+    const fsExtra = require("fs-extra");
+    const path = require("path");
+
+    console.log(`🗑️ Deleting: ${targetPath}`); // Console Log in VS Code
+
+    // استفاده از remove (که هم فایل هم فولدر را پاک می‌کند)
     await fsExtra.remove(path.normalize(targetPath));
+
     return { success: true };
   } catch (error) {
+    console.error("Delete Error:", error);
     return { success: false, error: error.message };
   }
 });
-
 // Rename/Move File/Folder
 ipcMain.handle("fs-rename", async (event, { oldPath, newPath }) => {
   try {

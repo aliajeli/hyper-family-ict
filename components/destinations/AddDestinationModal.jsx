@@ -51,11 +51,13 @@ const AddDestinationModal = ({ isOpen, onClose }) => {
       prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b],
     );
 
+  // ...
   const filtered = destinations.filter(
     (d) =>
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.ip.includes(search),
+      (d.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (d.ip || "").includes(search),
   );
+  // ...
   const grouped = branches.reduce((acc, b) => {
     acc[b] = filtered.filter((d) => d.branch === b);
     return acc;

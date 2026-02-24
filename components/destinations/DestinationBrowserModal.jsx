@@ -51,12 +51,13 @@ const DestinationBrowserModal = ({ isOpen, onClose, onSelect }) => {
     onClose();
   };
 
+  // ...
   const filtered = destinations.filter(
     (d) =>
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.ip.includes(search) ||
-      d.branch.toLowerCase().includes(search.toLowerCase()),
+      (d.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (d.ip || "").includes(search),
   );
+  // ...
 
   return (
     <Modal
