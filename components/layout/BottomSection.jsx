@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import Badge from '@/components/ui/Badge';
-import Card from '@/components/ui/Card';
-import ContextMenu from '@/components/ui/ContextMenu';
-import { cn } from '@/lib/utils';
-import { useMonitoringStore, useSystemStore } from '@/store';
-import { motion } from 'framer-motion';
+import ContextMenu from "@/components/ui/ContextMenu";
+import { cn } from "@/lib/utils";
+import { useMonitoringStore, useSystemStore } from "@/store";
+import { motion } from "framer-motion";
 import {
   Activity,
+  AlertTriangle,
   Cpu,
   Info,
+  MapPin,
   MessageSquare,
   Monitor,
   Network,
@@ -22,11 +22,13 @@ import {
   Settings,
   ShoppingCart,
   Terminal,
-  Video
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+  Video,
+  Wifi,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
+// --- Device Icons Mapping ---
 const DeviceIcon = ({ type, className }) => {
   const icons = {
     Router: Router,
@@ -38,111 +40,60 @@ const DeviceIcon = ({ type, className }) => {
     Client: Monitor,
     Checkout: ShoppingCart,
   };
-
   const Icon = icons[type] || Monitor;
   return <Icon className={className} />;
 };
 
-const StatusIndicator = ({ status }) => {
-  const statusColors = {
-    online: 'bg-success',
-    offline: 'bg-error',
-    checking: 'bg-warning animate-pulse',
-    unknown: 'bg-text-muted',
+// --- Status Dot ---
+const StatusDot = ({ status }) => {
+  const colors = {
+    online: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]",
+    offline: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]",
+    checking: "bg-amber-500 animate-pulse",
+    unknown: "bg-slate-600",
   };
-
   return (
-    <span className={cn(
-      'inline-block w-2 h-2 rounded-full',
-      statusColors[status] || statusColors.unknown
-    )} />
+    <div
+      className={cn(
+        "w-2 h-2 rounded-full transition-all duration-500",
+        colors[status] || colors.unknown,
+      )}
+    />
   );
 };
 
-const DeviceCard = ({ device, status }) => {
-  
-  // --- Actions ---
+// --- Device Item (Row) ---
+const DeviceItem = ({ device, status }) => {
   const handleConnectRDP = () => {
     if (window.electron) {
-      toast.loading(`Launching RDP to ${device.ip}...`);
+      toast.loading(`RDP to ${device.ip}...`);
       window.electron.connectRDP(device.ip);
-      setTimeout(() => toast.dismiss(), 2000);
-    } else {
-      toast.success(`[Mock] RDP to ${device.ip}`);
-    }
+    } else toast.success(`[Mock] RDP ${device.ip}`);
   };
 
-  const handleConnectTeamViewer = () => {
-    toast.success(`Opening TeamViewer for ${device.name}`);
-    // Implement logic: "C:\Program Files\TeamViewer\TeamViewer.exe" -i <ID> -P <Password>
-  };
-
-  const handlePing = () => {
-    toast('Pinging...', { icon: '🔍' });
-    // Implement real ping
-  };
-
-  const handleOpenBrowser = () => {
-    window.open(`http://${device.ip}`, '_blank');
-  };
-
-  const handleWinbox = () => {
-    // Launch Winbox.exe
-  };
-
-  const handleTermius = () => {
-    toast.success('Launching Termius...');
-    // Launch Termius
-  };
-
-  // --- Context Menu Items ---
   const getContextMenuItems = (type) => {
-    const commonItems = [
-      { label: 'System Info', icon: <Info className="w-3 h-3" />, onClick: () => console.log('Info') },
-      { label: 'Ping Check', icon: <Activity className="w-3 h-3" />, onClick: handlePing },
+    const common = [
+      { label: "System Info", icon: <Info className="w-3.5 h-3.5" /> },
+      { label: "Ping Check", icon: <Activity className="w-3.5 h-3.5" /> },
     ];
-
-    if (type === 'Client' || type === 'Checkout') {
+    if (type === "Client" || type === "Checkout")
       return [
-        { label: 'Remote Desktop (RDP)', icon: <Monitor className="w-3 h-3" />, onClick: handleConnectRDP },
-        { label: 'TeamViewer', icon: <Monitor className="w-3 h-3" />, onClick: handleConnectTeamViewer },
+        {
+          label: "Remote Desktop",
+          icon: <Monitor className="w-3.5 h-3.5" />,
+          onClick: handleConnectRDP,
+        },
+        { label: "TeamViewer", icon: <Monitor className="w-3.5 h-3.5" /> },
         { separator: true },
-        { label: 'Printers', icon: <Printer className="w-3 h-3" /> },
-        { label: 'Services', icon: <Settings className="w-3 h-3" /> },
-        { label: 'Processes', icon: <Cpu className="w-3 h-3" /> },
-        { label: 'Applications', icon: <Package className="w-3 h-3" /> },
-        { separator: true },
-        { label: 'Send Message', icon: <MessageSquare className="w-3 h-3" /> },
-        { label: 'Power Options', icon: <Power className="w-3 h-3" />, danger: true },
-        ...commonItems
+        { label: "Services", icon: <Settings className="w-3.5 h-3.5" /> },
+        {
+          label: "Restart",
+          icon: <RefreshCw className="w-3.5 h-3.5" />,
+          danger: true,
+        },
+        ...common,
       ];
-    }
-
-    if (type === 'Router') {
-      return [
-        { label: 'Winbox', icon: <Router className="w-3 h-3" />, onClick: handleWinbox },
-        { label: 'Web Fig', icon: <Monitor className="w-3 h-3" />, onClick: handleOpenBrowser },
-        { label: 'Terminal (SSH)', icon: <Terminal className="w-3 h-3" /> },
-        ...commonItems
-      ];
-    }
-
-    if (type === 'Switch') {
-      return [
-        { label: 'Termius (SSH)', icon: <Terminal className="w-3 h-3" />, onClick: handleTermius },
-        { label: 'Web Interface', icon: <Monitor className="w-3 h-3" />, onClick: handleOpenBrowser },
-        ...commonItems
-      ];
-    }
-
-    if (['Kyan', 'ESXi', 'iLO', 'NVR'].includes(type)) {
-      return [
-        { label: 'Open in Browser', icon: <Monitor className="w-3 h-3" />, onClick: handleOpenBrowser },
-        ...commonItems
-      ];
-    }
-
-    return commonItems;
+    return common;
   };
 
   return (
@@ -150,60 +101,113 @@ const DeviceCard = ({ device, status }) => {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        whileHover={{ scale: 1.01, backgroundColor: 'var(--bg-hover)' }}
-        className="flex items-center gap-2 p-1.5 rounded bg-bg-tertiary/30 border border-transparent hover:border-border cursor-pointer transition-colors text-xs group"
+        whileHover={{ x: 4, backgroundColor: "rgba(30, 41, 59, 0.8)" }}
+        className="group flex items-center gap-3 px-3 py-2 rounded-lg border border-transparent hover:border-slate-700/50 cursor-pointer transition-all duration-200"
       >
-        <StatusIndicator status={status} />
-        <DeviceIcon type={device.type} className="w-3.5 h-3.5 text-text-secondary group-hover:text-accent transition-colors" />
-        <span className="truncate flex-1 font-medium text-text-primary" title={device.name}>
-          {device.name}
-        </span>
-        <span className="text-[10px] text-text-muted font-mono bg-bg-primary/50 px-1 rounded">
-          {device.ip}
-        </span>
+        <StatusDot status={status} />
+
+        <div
+          className={cn(
+            "p-1.5 rounded-md transition-colors",
+            status === "online"
+              ? "bg-emerald-500/10 text-emerald-400"
+              : status === "offline"
+                ? "bg-rose-500/10 text-rose-400"
+                : "bg-slate-700/30 text-slate-400",
+          )}
+        >
+          <DeviceIcon type={device.type} className="w-4 h-4" />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-slate-200 truncate group-hover:text-white transition-colors">
+            {device.name}
+          </div>
+          <div className="text-[10px] text-slate-500 font-mono truncate group-hover:text-slate-400">
+            {device.ip}
+          </div>
+        </div>
+
+        {status === "offline" && (
+          <AlertTriangle className="w-3.5 h-3.5 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
       </motion.div>
     </ContextMenu>
   );
 };
 
-const BranchCard = ({ branch, systems, statuses }) => {
-  const branchSystems = systems.filter(s => s.branch === branch.name || s.branch === branch.nameFa);
-  const onlineCount = branchSystems.filter(s => statuses[s.id]?.status === 'online').length;
+// --- Branch Card ---
+const BranchColumn = ({ branch, systems, statuses }) => {
+  const branchSystems = systems.filter(
+    (s) => s.branch === branch.name || s.branch === branch.nameFa,
+  );
+  const onlineCount = branchSystems.filter(
+    (s) => statuses[s.id]?.status === "online",
+  ).length;
+  const totalCount = branchSystems.length;
+
+  // Calculate Health Percentage
+  const health =
+    totalCount > 0 ? Math.round((onlineCount / totalCount) * 100) : 0;
+  const healthColor =
+    health === 100
+      ? "bg-emerald-500"
+      : health > 50
+        ? "bg-amber-500"
+        : "bg-rose-500";
 
   return (
-    <Card className="min-w-[240px] w-[240px] flex-shrink-0 flex flex-col h-full border-l-4 border-l-accent p-0 overflow-hidden bg-bg-card/50 shadow-sm">
-      <div className="bg-bg-secondary px-3 py-2 border-b border-border flex justify-between items-center h-10">
-        <div className="flex flex-col justify-center">
-          <h3 className="text-sm font-bold text-text-primary leading-tight">
-            {branch.name}
-          </h3>
-          <span className="text-[10px] text-text-muted leading-tight">{branch.nameFa}</span>
+    <div className="flex flex-col w-[260px] min-w-[260px] h-full bg-[#0f172a] border-r border-slate-800 last:border-r-0 relative group">
+      {/* Header */}
+      <div className="p-4 border-b border-slate-800 bg-[#0f172a] sticky top-0 z-10">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 text-blue-400" /> {branch.name}
+            </h3>
+            <span className="text-[10px] text-slate-500 ml-5 block">
+              {branch.nameFa}
+            </span>
+          </div>
+          <div
+            className={cn(
+              "text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700",
+            )}
+          >
+            {onlineCount}/{totalCount}
+          </div>
         </div>
-        <Badge 
-          className="text-[10px] px-1.5 py-0 h-5 min-w-[3rem] justify-center"
-          variant={onlineCount === branchSystems.length && branchSystems.length > 0 ? 'success' : 'warning'}
-        >
-          {onlineCount}/{branchSystems.length}
-        </Badge>
+
+        {/* Health Bar */}
+        <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
+          <div
+            className={cn(
+              "h-full transition-all duration-1000 ease-out",
+              healthColor,
+            )}
+            style={{ width: `${health}%` }}
+          />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar bg-bg-primary/30">
+      {/* Device List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar bg-[#0b1120]">
         {branchSystems.length > 0 ? (
           branchSystems.map((device) => (
-            <DeviceCard
+            <DeviceItem
               key={device.id}
               device={device}
-              status={statuses[device.id]?.status || 'unknown'}
+              status={statuses[device.id]?.status || "unknown"}
             />
           ))
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-text-muted opacity-40 gap-2">
-            <Package className="w-6 h-6" strokeWidth={1.5} />
-            <span className="text-[10px]">No Devices</span>
+          <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-40 gap-2">
+            <Package className="w-8 h-8" strokeWidth={1} />
+            <span className="text-[10px]">No Devices Configured</span>
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 
@@ -219,64 +223,82 @@ const BottomSection = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await fetch('/api/branches');
-      const data = await response.json();
+      const res = await fetch("/api/branches");
+      const data = await res.json();
       setBranches(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching branches:', error);
-      setBranches([]);
+      console.error(error);
     }
   };
 
   const totalDevices = systems.length;
-  const onlineDevices = Object.values(statuses).filter(s => s.status === 'online').length;
+  const onlineDevices = Object.values(statuses).filter(
+    (s) => s.status === "online",
+  ).length;
 
   return (
-    <div className="flex-1 bg-bg-primary p-2 overflow-hidden flex flex-col border-t border-border">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2 px-1 h-8 shrink-0">
-        <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-          <Activity className="w-4 h-4 text-accent" />
-          System Monitoring
-        </h2>
-        <div className="flex items-center gap-3 text-xs">
+    <div className="flex-1 flex flex-col bg-[#020617] overflow-hidden relative">
+      {/* Global Status Bar */}
+      <div className="h-9 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-4 shrink-0 shadow-sm z-20">
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-indigo-400" /> NETWORK OVERVIEW
+          </span>
+          <div className="h-4 w-px bg-slate-700"></div>
+          <span className="text-[10px] text-slate-500">
+            Total Nodes:{" "}
+            <span className="text-slate-300 font-mono">{totalDevices}</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
           {isMonitoring && (
-            <span className="flex items-center gap-1.5 text-success animate-pulse">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              Monitoring Active
-            </span>
+            <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-medium text-emerald-400">
+                LIVE MONITORING
+              </span>
+            </div>
           )}
-          <Badge variant={isMonitoring ? 'success' : 'default'} className="text-[10px] h-5 px-2">
-            {onlineDevices}/{totalDevices} Online
-          </Badge>
+          <div className="text-[10px] text-slate-400 font-mono">
+            {onlineDevices} Online / {totalDevices - onlineDevices} Offline
+          </div>
         </div>
       </div>
 
-      {/* Branches Grid */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden pb-1">
-        <div className="flex gap-3 h-full px-1">
+      {/* Main Grid Area */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden bg-[#020617]">
+        <div className="flex h-full divide-x divide-slate-800 min-w-max">
           {branches.map((branch) => (
-            <BranchCard
+            <BranchColumn
               key={branch.id}
               branch={branch}
               systems={systems}
               statuses={statuses}
             />
           ))}
-          {branches.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-sm border-2 border-dashed border-border rounded-lg m-2 opacity-50">
-              <Package className="w-10 h-10 mb-2" strokeWidth={1} />
-              <p>No branches found</p>
-              <p className="text-xs">Add systems to see them here</p>
+
+          {/* Add Branch Placeholder */}
+          <div className="w-[200px] h-full flex items-center justify-center border-r border-slate-800 border-dashed bg-[#0f172a]/30 hover:bg-[#0f172a]/50 transition-colors cursor-pointer group">
+            <div className="flex flex-col items-center gap-2 text-slate-600 group-hover:text-slate-400">
+              <div className="p-3 rounded-full border border-slate-700 bg-slate-800/50 group-hover:scale-110 transition-transform">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium">Add Branch</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Status Bar */}
-      <div className="mt-1 pt-1 border-t border-border flex justify-between text-[10px] text-text-muted px-1 h-5 shrink-0 items-center">
-        <span>Last Update: {new Date().toLocaleTimeString()}</span>
-        <span>Hyper Family ICT Manager v1.0.0</span>
+      {/* Footer Info */}
+      <div className="h-6 bg-[#0f172a] border-t border-slate-800 flex items-center justify-between px-3 text-[9px] text-slate-600 shrink-0 select-none">
+        <span>Hyper Family Network Operations Center</span>
+        <span className="font-mono">
+          v1.2.0 • Last Sync: {new Date().toLocaleTimeString()}
+        </span>
       </div>
     </div>
   );

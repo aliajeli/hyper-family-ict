@@ -11,14 +11,18 @@ import { useDestinationStore } from "@/store";
 import {
   ArrowRight,
   File,
+  FilePlus,
   FolderOpen,
+  FolderPlus,
   Monitor,
   Play,
   Server,
   Square,
+  Trash2,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast"; // 👈 اضافه کنید
 
 const CopyModal = ({ isOpen, onClose }) => {
   const {
@@ -33,7 +37,10 @@ const CopyModal = ({ isOpen, onClose }) => {
 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [targetIds, setTargetIds] = useState([]);
+
+  // Browser States
   const [showFileBrowser, setShowFileBrowser] = useState(false);
+  const [browserMode, setBrowserMode] = useState("file"); // 'file' or 'folder'
   const [showDestBrowser, setShowDestBrowser] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
@@ -57,14 +64,46 @@ const CopyModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleFilesSelected = (files) =>
-    setSelectedFiles((prev) => [...prev, ...files]);
-  const handleDestSelected = (ids) =>
-    setTargetIds((prev) => [...new Set([...prev, ...ids])]);
+  const handleFilesSelected = (files) => {
+    // 1. دسترسی به مقدار فعلی استیت بدون انتظار برای تابع callback
+    // (چون ما داخل یک ایونت هندلر هستیم، selectedFiles مقدارش معتبر است)
+
+    const newFiles = files.filter(
+      (newFile) =>
+        !selectedFiles.some((existing) => existing.path === newFile.path),
+    );
+
+    // 2. نمایش پیام اگر تکراری وجود داشت
+    if (newFiles.length < files.length) {
+      toast.error("Duplicate files skipped");
+    }
+
+    // 3. آپدیت استیت فقط با فایل‌های جدید
+    if (newFiles.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleDestSelected = (ids) => {
+    setTargetIds((prev) => {
+      // استفاده از Set برای حذف تکراری‌ها به طور خودکار
+      return [...new Set([...prev, ...ids])];
+    });
+  };
   const removeFile = (path) =>
     setSelectedFiles((prev) => prev.filter((f) => f.path !== path));
   const removeDest = (id) =>
     setTargetIds((prev) => prev.filter((i) => i !== id));
+
+  // Clear Handlers
+  const clearFiles = () => setSelectedFiles([]);
+  const clearTargets = () => setTargetIds([]);
+
+  // Open Browser Helper
+  const openBrowser = (mode) => {
+    setBrowserMode(mode);
+    setShowFileBrowser(true);
+  };
 
   return (
     <>
@@ -77,30 +116,49 @@ const CopyModal = ({ isOpen, onClose }) => {
       >
         <div className="flex-1 grid grid-cols-12 gap-4 p-4 h-full min-h-0 bg-gradient-to-b from-[#0f172a] to-[#1e293b] overflow-hidden">
           {/* --- LEFT COLUMN --- */}
-          <div className="col-span-4 grid grid-rows-2 gap-4 h-full min-h-[28rem]">
-            {/* 1. SOURCE SECTION (Always takes 50% height) */}
-            <div className="h-full flex flex-col bg-[#1e293b]/50 border border-slate-700/50 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm transition-all hover:border-slate-600">
+          <div className="col-span-4 grid grid-rows-2 gap-4 h-full min-h-0">
+            {/* 1. SOURCE SECTION */}
+            <div className="h-full flex flex-col bg-[#1e293b]/50 border border-slate-700/50 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm transition-all hover:border-slate-600 min-h-0">
               {/* Header */}
-              <div className="px-3 py-2 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30 shrink-0 h-10">
+              <div className="px-3 py-2 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30 shrink-0 h-12">
                 <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
-                  <div className="p-1 bg-blue-500/10 rounded">
+                  <div className="p-1.5 bg-blue-500/10 rounded-md">
                     <FolderOpen className="w-3.5 h-3.5 text-blue-400" />
                   </div>
-                  Source Files
+                  Source
                   <span className="text-[10px] font-normal text-slate-500 ml-1">
                     ({selectedFiles.length})
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => setShowFileBrowser(true)}
-                  className="h-6 text-[10px] bg-blue-600 hover:bg-blue-500 text-white border-0 px-2"
-                >
-                  + Add
-                </Button>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={clearFiles}
+                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                    title="Clear All"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-4 bg-slate-700 mx-1"></div>
+                  <Button
+                    size="sm"
+                    onClick={() => openBrowser("file")}
+                    className="h-7 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-2.5 gap-1.5"
+                  >
+                    <FilePlus className="w-3 h-3 text-blue-400" /> File
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => openBrowser("folder")}
+                    className="h-7 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 px-2.5 gap-1.5"
+                  >
+                    <FolderPlus className="w-3 h-3 text-amber-400" /> Folder
+                  </Button>
+                </div>
               </div>
 
-              {/* List (Compact Items) */}
+              {/* List */}
               <div className="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar h-full">
                 {selectedFiles.map((file, i) => (
                   <div
@@ -108,10 +166,17 @@ const CopyModal = ({ isOpen, onClose }) => {
                     className="flex justify-between items-center p-1.5 rounded-lg bg-slate-800/40 border border-transparent hover:border-slate-600 hover:bg-slate-800 transition-all group"
                   >
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <File
-                        className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors shrink-0"
-                        strokeWidth={1.5}
-                      />
+                      {file.type === "folder" ? (
+                        <FolderOpen
+                          className="w-5 h-5 text-amber-400 shrink-0"
+                          strokeWidth={1.5}
+                        />
+                      ) : (
+                        <File
+                          className="w-5 h-5 text-blue-400 shrink-0"
+                          strokeWidth={1.5}
+                        />
+                      )}
                       <div className="flex flex-col overflow-hidden min-w-0">
                         <span className="text-xs text-slate-200 truncate font-medium">
                           {file.name}
@@ -132,18 +197,18 @@ const CopyModal = ({ isOpen, onClose }) => {
                 {selectedFiles.length === 0 && (
                   <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50 gap-1">
                     <FolderOpen className="w-8 h-8" strokeWidth={1} />
-                    <span className="text-[10px]">No files selected</span>
+                    <span className="text-[10px]">No source selected</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 2. TARGET SECTION (Always takes 50% height) */}
+            {/* 2. TARGET SECTION */}
             <div className="h-full flex flex-col bg-[#1e293b]/50 border border-slate-700/50 rounded-xl overflow-hidden shadow-sm backdrop-blur-sm transition-all hover:border-slate-600 min-h-0">
               {/* Header */}
-              <div className="px-3 py-2 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30 shrink-0 h-10">
+              <div className="px-3 py-2 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/30 shrink-0 h-12">
                 <div className="flex items-center gap-2 text-slate-200 font-semibold text-xs">
-                  <div className="p-1 bg-emerald-500/10 rounded">
+                  <div className="p-1.5 bg-emerald-500/10 rounded-md">
                     <Monitor className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
                   Destinations
@@ -151,16 +216,26 @@ const CopyModal = ({ isOpen, onClose }) => {
                     ({selectedTargets.length})
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => setShowDestBrowser(true)}
-                  className="h-6 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white border-0 px-2"
-                >
-                  + Add
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={clearTargets}
+                    className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                    title="Clear All"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="w-px h-4 bg-slate-700 mx-1"></div>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowDestBrowser(true)}
+                    className="h-7 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white border-0 px-3"
+                  >
+                    + Add Targets
+                  </Button>
+                </div>
               </div>
 
-              {/* List (Compact Items) */}
+              {/* List */}
               <div className="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar h-full">
                 {selectedTargets.map((dest, i) => (
                   <div
@@ -228,7 +303,7 @@ const CopyModal = ({ isOpen, onClose }) => {
                   <span className="text-slate-200 font-bold">
                     {selectedFiles.length}
                   </span>{" "}
-                  Files
+                  Items
                   <ArrowRight className="w-3 h-3 text-slate-600" />
                   <span className="text-slate-200 font-bold">
                     {selectedTargets.length}
@@ -279,12 +354,14 @@ const CopyModal = ({ isOpen, onClose }) => {
         </div>
       </Modal>
 
+      {/* File Browser Modal with Dynamic Mode */}
       <FileBrowserModal
         isOpen={showFileBrowser}
         onClose={() => setShowFileBrowser(false)}
         onSelect={handleFilesSelected}
-        mode="mixed"
+        mode={browserMode} // 👈 'file' or 'folder'
       />
+
       <DestinationBrowserModal
         isOpen={showDestBrowser}
         onClose={() => setShowDestBrowser(false)}

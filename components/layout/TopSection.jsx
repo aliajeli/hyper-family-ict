@@ -1,27 +1,32 @@
-'use client';
+"use client";
 
-import { Button, Checkbox, Input } from '@/components/ui';
-import { cn } from '@/lib/utils';
-import { useMonitoringStore, useOperationStore } from '@/store';
+import { Button, Checkbox, Input } from "@/components/ui"; // اطمینان از وجود Checkbox
+import { cn } from "@/lib/utils";
+import { useMonitoringStore, useOperationStore } from "@/store"; // اصلاح ایمپورت
 import {
   Activity,
   Copy,
   FileEdit,
   FolderInput,
+  Ghost,
   Info,
+  Lock,
   Package,
   Play,
   Plus,
   RefreshCw,
   Send,
+  Server,
   Settings,
+  Shield,
   Square,
   Target,
   Trash2,
-} from 'lucide-react';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-
+  User,
+  UserCheck,
+} from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 const TopSection = ({
   onAddSystem,
@@ -34,216 +39,389 @@ const TopSection = ({
   onAbout,
   onSettings,
 }) => {
-
   const [isServiceRunning, setIsServiceRunning] = useState(false);
 
-  const { isMonitoring, startMonitoring, stopMonitoring } = useMonitoringStore();
-  const { 
-    destinationPath, setDestinationPath, 
-    services, setServices, 
-    message, setMessage,
-    stopBefore, setStopBefore, // 👈 مهم
-    startAfter, setStartAfter, // 👈 مهم
-    sendAfter, setSendAfter    // 👈 مهم
+  // دریافت تمام استیت‌ها از استور
+  const {
+    destinationPath,
+    setDestinationPath,
+    services,
+    setServices,
+    message,
+    setMessage,
+    stopBefore,
+    setStopBefore,
+    startAfter,
+    setStartAfter,
+    sendAfter,
+    setSendAfter,
+    authMode,
+    setAuthMode,
+    username,
+    setUsername,
+    password,
+    setPassword,
   } = useOperationStore();
+
+  const { isMonitoring, startMonitoring, stopMonitoring } =
+    useMonitoringStore();
+
+  // --- Handlers ---
   const handleToggleMonitoring = () => {
-    if (isMonitoring) {
-      stopMonitoring();
-    } else {
-      // Pass empty array for now, store handles fetching
+    if (isMonitoring) stopMonitoring();
+    else {
       startMonitoring([]);
-      toast.success('Monitoring started');
+      toast.success("Monitoring started");
     }
   };
 
   const handleStartServices = async () => {
-    if (!services) return toast.error('Please enter service name');
-    
+    if (!services) return toast.error("Enter service name");
     setIsServiceRunning(true);
-    toast.loading(`Starting ${services}...`);
-
-    // Mock targets - In real app, get from selected destinations
-    const targets = [{ ip: '127.0.0.1' }]; 
-
-    for (const target of targets) {
-      try {
-        if (window.electron) {
-          const result = await window.electron.manageService(target.ip, services, 'start');
-          if (result.success) {
-            toast.success(`Started ${services} on ${target.ip}`);
-          } else {
-            toast.error(`Failed on ${target.ip}: ${result.error}`);
-          }
-        } else {
-          await new Promise(r => setTimeout(r, 500));
-          toast.success(`[Mock] Started ${services} on ${target.ip}`);
-        }
-      } catch (err) {
-        toast.error(`Error: ${err.message}`);
-      }
-    }
-    
-    toast.dismiss();
-    setIsServiceRunning(false);
+    toast.success(`[Mock] Starting ${services}...`);
+    setTimeout(() => setIsServiceRunning(false), 1000);
   };
 
   const handleStopServices = async () => {
-    if (!services) return toast.error('Please enter service name');
-    
+    if (!services) return toast.error("Enter service name");
     setIsServiceRunning(true);
-    toast.loading(`Stopping ${services}...`);
-
-    const targets = [{ ip: '127.0.0.1' }];
-
-    for (const target of targets) {
-      try {
-        if (window.electron) {
-          const result = await window.electron.manageService(target.ip, services, 'stop');
-          if (result.success) {
-            toast.success(`Stopped ${services} on ${target.ip}`);
-          } else {
-            toast.error(`Failed on ${target.ip}: ${result.error}`);
-          }
-        } else {
-          await new Promise(r => setTimeout(r, 500));
-          toast.success(`[Mock] Stopped ${services} on ${target.ip}`);
-        }
-      } catch (err) {
-        toast.error(`Error: ${err.message}`);
-      }
-    }
-    
-    toast.dismiss();
-    setIsServiceRunning(false);
+    toast.success(`[Mock] Stopping ${services}...`);
+    setTimeout(() => setIsServiceRunning(false), 1000);
   };
 
-  const handleSendMessage = async () => {
-    if (!message) return toast.error('Please enter a message');
-    
-    // Logic for sending message (msg command)
-    // msg * /server:IP "Message"
-    toast.success(`Message sent: "${message}"`);
+  const handleSendMessage = () => {
+    if (!message) return toast.error("Enter message");
+    toast.success("Message sent");
   };
 
   return (
-    <div className="bg-bg-secondary border-b border-border p-2 space-y-2 text-sm select-none">
-      {/* Row 1: System & Path */}
-      <div className="flex items-center gap-2">
-        <Button onClick={onAddSystem} leftIcon={<Plus className="w-3.5 h-3.5" />} size="sm" variant="primary" className="h-8 text-xs">
-          Add System
-        </Button>
-        <Button onClick={onAddDestination} leftIcon={<Target className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">
-          Add Dest
-        </Button>
-      <div className="flex-1">
-      <Input 
-        placeholder="Remote Path (e.g., C:\HyperFamily\App)" 
-        value={destinationPath} // 👈 Use store value
-        onChange={(e) => setDestinationPath(e.target.value)} // 👈 Update store
-        icon={<FolderInput className="w-3.5 h-3.5" />}
-        className="h-8 text-xs"
-      />
-    </div>
-        <Button onClick={onSettings} variant="ghost" size="icon" className="h-8 w-8 text-text-muted hover:text-text-primary">
+    <div className="flex flex-col gap-2 p-3 bg-[#0f172a] border-b border-slate-700 shadow-xl z-10">
+      {/* ================= ROW 1: AUTHENTICATION & CREDENTIALS ================= */}
+      <div className="flex items-center gap-4 bg-[#1e293b]/50 p-2 rounded-xl border border-slate-700/50">
+        {/* Auth Mode Checkboxes (Radio behavior) */}
+        <div className="flex items-center gap-4 px-2">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div
+              className={cn(
+                "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                authMode === "this"
+                  ? "border-emerald-500 bg-emerald-500/20"
+                  : "border-slate-500 bg-transparent",
+              )}
+            >
+              {authMode === "this" && (
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              )}
+            </div>
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={authMode === "this"}
+              onChange={() => setAuthMode("this")}
+            />
+            <span
+              className={cn(
+                "text-xs font-medium transition-colors",
+                authMode === "this"
+                  ? "text-emerald-400"
+                  : "text-slate-400 group-hover:text-slate-200",
+              )}
+            >
+              This Credential
+            </span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div
+              className={cn(
+                "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                authMode === "current"
+                  ? "border-blue-500 bg-blue-500/20"
+                  : "border-slate-500 bg-transparent",
+              )}
+            >
+              {authMode === "current" && (
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+              )}
+            </div>
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={authMode === "current"}
+              onChange={() => setAuthMode("current")}
+            />
+            <span
+              className={cn(
+                "text-xs font-medium transition-colors",
+                authMode === "current"
+                  ? "text-blue-400"
+                  : "text-slate-400 group-hover:text-slate-200",
+              )}
+            >
+              Login Credential
+            </span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div
+              className={cn(
+                "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                authMode === "anonymous"
+                  ? "border-amber-500 bg-amber-500/20"
+                  : "border-slate-500 bg-transparent",
+              )}
+            >
+              {authMode === "anonymous" && (
+                <div className="w-2 h-2 rounded-full bg-amber-500" />
+              )}
+            </div>
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={authMode === "anonymous"}
+              onChange={() => setAuthMode("anonymous")}
+            />
+            <span
+              className={cn(
+                "text-xs font-medium transition-colors",
+                authMode === "anonymous"
+                  ? "text-amber-400"
+                  : "text-slate-400 group-hover:text-slate-200",
+              )}
+            >
+              Anonymous
+            </span>
+          </label>
+        </div>
+
+        {/* Credentials Inputs (Disabled unless 'this' is selected) */}
+        <div className="flex-1 flex gap-3 border-l border-slate-700 pl-4">
+          <div className="relative flex-1 group">
+            <User
+              className={cn(
+                "absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors",
+                authMode === "this"
+                  ? "text-slate-400 group-focus-within:text-emerald-400"
+                  : "text-slate-600",
+              )}
+            />
+            <input
+              disabled={authMode !== "this"}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              className={cn(
+                "w-full h-8 pl-9 pr-3 text-xs rounded-lg bg-[#0f172a] border transition-all focus:outline-none",
+                authMode === "this"
+                  ? "border-slate-600 text-slate-200 focus:border-emerald-500"
+                  : "border-slate-800 text-slate-600 cursor-not-allowed",
+              )}
+            />
+          </div>
+          <div className="relative flex-1 group">
+            <Lock
+              className={cn(
+                "absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 transition-colors",
+                authMode === "this"
+                  ? "text-slate-400 group-focus-within:text-emerald-400"
+                  : "text-slate-600",
+              )}
+            />
+            <input
+              type="password"
+              disabled={authMode !== "this"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className={cn(
+                "w-full h-8 pl-9 pr-3 text-xs rounded-lg bg-[#0f172a] border transition-all focus:outline-none",
+                authMode === "this"
+                  ? "border-slate-600 text-slate-200 focus:border-emerald-500"
+                  : "border-slate-800 text-slate-600 cursor-not-allowed",
+              )}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ================= ROW 2: PATH & SYSTEM CONFIG ================= */}
+      <div className="flex items-center gap-3">
+        <div className="flex gap-2">
+          <Button
+            onClick={onAddSystem}
+            className="h-9 bg-indigo-600 hover:bg-indigo-500 text-white text-xs border border-indigo-400/20 shadow-lg shadow-indigo-500/10"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add System
+          </Button>
+          <Button
+            onClick={onAddDestination}
+            className="h-9 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs border border-slate-600"
+          >
+            <Target className="w-3.5 h-3.5 mr-1.5" /> Add Dest
+          </Button>
+        </div>
+
+        <div className="flex-1 relative group">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-700/50 p-1 rounded">
+            <FolderInput className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <input
+            value={destinationPath}
+            onChange={(e) => setDestinationPath(e.target.value)}
+            placeholder="Remote Destination Path (e.g., C:\HyperFamily\Updates)"
+            className="w-full h-9 pl-11 pr-4 text-xs rounded-lg bg-[#1e293b] border border-slate-600 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all font-mono shadow-inner"
+          />
+        </div>
+
+        <Button
+          onClick={onSettings}
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-slate-400 hover:text-slate-200 hover:bg-slate-700"
+        >
           <Settings className="w-4 h-4" />
         </Button>
       </div>
 
-      {/* Row 2: Services */}
-      <div className="flex items-center gap-2">
-        <div className="flex-[2]">
-          <Input 
-            placeholder="Services (Spooler, W3SVC...)" 
-            value={services} 
-            onChange={(e) => setServices(e.target.value)}
-            className="h-8 text-xs font-mono"
-          />
+      {/* ================= ROW 3: OPERATIONS BAR (Services & Msg) ================= */}
+      <div className="grid grid-cols-12 gap-3">
+        {/* Services Control */}
+        <div className="col-span-7 flex items-center gap-2 bg-[#1e293b]/30 p-1.5 rounded-lg border border-slate-700/50">
+          <div className="relative flex-1">
+            <input
+              value={services}
+              onChange={(e) => setServices(e.target.value)}
+              placeholder="Service Name (e.g., Spooler)"
+              className="w-full h-8 px-3 text-xs rounded bg-[#0f172a] border border-slate-700 text-slate-300 focus:border-amber-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-3 px-2">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={stopBefore}
+                onChange={(e) => setStopBefore(e.target.checked)}
+                className="accent-amber-500 w-3 h-3"
+              />
+              <span className="text-[10px] text-slate-400">Stop First</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={startAfter}
+                onChange={(e) => setStartAfter(e.target.checked)}
+                className="accent-emerald-500 w-3 h-3"
+              />
+              <span className="text-[10px] text-slate-400">Start After</span>
+            </label>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              onClick={handleStartServices}
+              disabled={isServiceRunning}
+              className="h-7 text-[10px] px-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-600/30"
+            >
+              Start
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleStopServices}
+              disabled={isServiceRunning}
+              className="h-7 text-[10px] px-2 bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-600/30"
+            >
+              Stop
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3 px-3 border-l border-r border-border h-8 bg-bg-primary/30 rounded">
-          <Checkbox 
-            label="Stop Before" 
-            checked={stopBefore} 
-            onChange={(e) => setStopBefore(e.target.checked)} 
-            className="text-[10px]" 
-          />
-          <Checkbox 
-            label="Start After" 
-            checked={startAfter} 
-            onChange={(e) => setStartAfter(e.target.checked)} 
-            className="text-[10px]" 
-          />
+
+        {/* Message Control */}
+        <div className="col-span-5 flex items-center gap-2 bg-[#1e293b]/30 p-1.5 rounded-lg border border-slate-700/50">
+          <div className="relative flex-1">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Message to User..."
+              className="w-full h-8 px-3 text-xs rounded bg-[#0f172a] border border-slate-700 text-slate-300 focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+          <label className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap px-1">
+            <input
+              type="checkbox"
+              checked={sendAfter}
+              onChange={(e) => setSendAfter(e.target.checked)}
+              className="accent-blue-500 w-3 h-3"
+            />
+            <span className="text-[10px] text-slate-400">Send After</span>
+          </label>
+          <Button
+            size="sm"
+            onClick={handleSendMessage}
+            className="h-7 w-7 p-0 bg-blue-600 text-white rounded hover:bg-blue-500"
+          >
+            <Send className="w-3 h-3" />
+          </Button>
         </div>
-        <Button 
-          onClick={handleStartServices}
-          disabled={isServiceRunning}
-          size="sm" 
-          variant="success" 
-          leftIcon={<Play className="w-3.5 h-3.5" />} 
-          className="h-8 text-xs min-w-[90px]"
-        >
-          Start Srv
-        </Button>
-        <Button 
-          onClick={handleStopServices}
-          disabled={isServiceRunning}
-          size="sm" 
-          variant="danger" 
-          leftIcon={<Square className="w-3.5 h-3.5" />} 
-          className="h-8 text-xs min-w-[90px]"
-        >
-          Stop Srv
-        </Button>
       </div>
 
-      {/* Row 3: Message */}
-      <div className="flex items-center gap-2">
-        <div className="flex-[2]">
-          <Input 
-            placeholder="Message to send..." 
-            value={message} 
-            onChange={(e) => setMessage(e.target.value)}
-            className="h-8 text-xs"
-          />
+      {/* ================= ROW 4: MAIN ACTIONS ================= */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-700/50 mt-1">
+        <div className="flex gap-2">
+          <Button
+            onClick={onCopy}
+            className="h-10 px-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs shadow-md hover:border-slate-500 transition-all"
+          >
+            <Copy className="w-4 h-4 mr-2 text-blue-400" /> Copy
+          </Button>
+          <Button
+            onClick={onDelete}
+            className="h-10 px-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs shadow-md hover:border-slate-500 transition-all"
+          >
+            <Trash2 className="w-4 h-4 mr-2 text-red-400" /> Delete
+          </Button>
+          <Button
+            onClick={onRename}
+            className="h-10 px-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs shadow-md hover:border-slate-500 transition-all"
+          >
+            <FileEdit className="w-4 h-4 mr-2 text-amber-400" /> Rename
+          </Button>
+          <Button
+            onClick={onReplace}
+            className="h-10 px-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs shadow-md hover:border-slate-500 transition-all"
+          >
+            <RefreshCw className="w-4 h-4 mr-2 text-emerald-400" /> Replace
+          </Button>
         </div>
-        <div className="flex items-center px-3 border-l border-r border-border h-8 bg-bg-primary/30 rounded">
-          <Checkbox 
-            label="Send After Op" 
-            checked={sendAfter} 
-            onChange={(e) => setSendAfter(e.target.checked)} 
-            className="text-[10px] whitespace-nowrap" 
-          />
-        </div>
-        <Button 
-          onClick={handleSendMessage}
-          size="sm" 
-          variant="primary" 
-          leftIcon={<Send className="w-3.5 h-3.5" />} 
-          className="h-8 text-xs whitespace-nowrap min-w-[100px]"
-        >
-          Send Msg
-        </Button>
-      </div>
 
-      {/* Row 4: Operations */}
-      <div className="flex items-center gap-2 pt-2 border-t border-border mt-1">
-        <Button onClick={onCopy} leftIcon={<Copy className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs min-w-[80px]">Copy</Button>
-        <Button onClick={onDelete} leftIcon={<Trash2 className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs min-w-[80px]">Delete</Button>
-        <Button onClick={onRename} leftIcon={<FileEdit className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs min-w-[80px]">Rename</Button>
-        <Button onClick={onReplace} leftIcon={<RefreshCw className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs min-w-[80px]">Replace</Button>
-        
-        <div className="flex-1" />
-        
-        <Button onClick={onEquipments} leftIcon={<Package className="w-3.5 h-3.5" />} size="sm" variant="secondary" className="h-8 text-xs">Equipments</Button>
-        <Button 
-          onClick={handleToggleMonitoring} 
-          leftIcon={<Activity className="w-3.5 h-3.5" />} 
-          size="sm"
-          variant={isMonitoring ? 'danger' : 'success'}
-          className="h-8 text-xs whitespace-nowrap"
-        >
-          {isMonitoring ? 'Stop Monitor' : 'Start Monitor'}
-        </Button>
-        <Button onClick={onAbout} leftIcon={<Info className="w-3.5 h-3.5" />} size="sm" variant="ghost" className="h-8 text-xs">About</Button>
+        <div className="flex gap-2 border-l border-slate-700 pl-4">
+          <Button
+            onClick={onEquipments}
+            className="h-10 px-4 bg-slate-800/50 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700"
+          >
+            <Package className="w-4 h-4 mr-2" /> Equipments
+          </Button>
+          <Button
+            onClick={handleToggleMonitoring}
+            className={cn(
+              "h-10 px-4 text-xs font-semibold border transition-all shadow-lg",
+              isMonitoring
+                ? "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500 hover:text-white"
+                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500 hover:text-white",
+            )}
+          >
+            <Activity
+              className={cn("w-4 h-4 mr-2", isMonitoring && "animate-pulse")}
+            />
+            {isMonitoring ? "Stop Monitor" : "Start Monitor"}
+          </Button>
+          <Button
+            onClick={onAbout}
+            variant="ghost"
+            className="h-10 px-3 text-slate-500 hover:text-slate-300"
+          >
+            <Info className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

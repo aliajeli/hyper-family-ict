@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld("electron", {
 
   // File System
   readDir: (path) => ipcRenderer.invoke("fs-read-dir", path),
+  getQuickAccess: () => ipcRenderer.invoke("fs-get-quick-access"), // 👈 جدید
 
   // System Operations
   exec: (command) => ipcRenderer.invoke("exec-command", command),
