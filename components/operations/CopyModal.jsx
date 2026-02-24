@@ -33,7 +33,7 @@ const CopyModal = ({ isOpen, onClose }) => {
     reportData,
     clearLogs,
   } = useFileOperations();
-  const { destinations } = useDestinationStore();
+  const { destinations, fetchDestinations } = useDestinationStore();
 
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [targetIds, setTargetIds] = useState([]);
@@ -44,11 +44,21 @@ const CopyModal = ({ isOpen, onClose }) => {
   const [showDestBrowser, setShowDestBrowser] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
+  //---------------------------------------
+
+  console.log("--- COPY MODAL DEBUG ---");
+  console.log("Store Destinations Count:", destinations.length);
+  console.log("Store Destinations:", destinations);
+  //---------------------------------------
+
   useEffect(() => {
     if (isOpen) {
       setSelectedFiles([]);
       setTargetIds([]);
       clearLogs();
+
+      // 👇 این خط حیاتی است: هر بار مودال باز شد، لیست مقصدها را رفرش کن
+      fetchDestinations();
     }
   }, [isOpen]);
 

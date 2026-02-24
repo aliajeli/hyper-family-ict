@@ -30,8 +30,8 @@ const DestinationBrowserModal = ({ isOpen, onClose, onSelect }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetchDestinations();
-      setSelectedIds([]); // Reset selection on open
+      console.log("Refreshing destinations list..."); // Debug log
+      fetchDestinations(); // 👈 Force Refresh
       setSearch("");
     }
   }, [isOpen]);

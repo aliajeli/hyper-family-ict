@@ -1,24 +1,26 @@
-'use client';
+"use client";
 
-import { LoginPage } from '@/components/auth';
-import { BottomSection, MainLayout, TopSection } from '@/components/layout';
-import { Modal } from '@/components/ui';
-import { useAuthStore } from '@/store';
-import { useEffect, useState } from 'react';
+import { LoginPage } from "@/components/auth";
+import { BottomSection, MainLayout, TopSection } from "@/components/layout";
+import { Modal } from "@/components/ui";
+import { useAuthStore, useDestinationStore, useSystemStore } from "@/store"; // 👈 Import stores
+import { useEffect, useState } from "react";
 
 // Import All Modals
-import AddDestinationModal from '@/components/destinations/AddDestinationModal';
-import EquipmentsModal from '@/components/equipments/EquipmentsModal';
-import CopyModal from '@/components/operations/CopyModal';
-import DeleteModal from '@/components/operations/DeleteModal';
-import RenameModal from '@/components/operations/RenameModal';
-import ReplaceModal from '@/components/operations/ReplaceModal';
-import AddSystemModal from '@/components/systems/AddSystemModal';
+import AddDestinationModal from "@/components/destinations/AddDestinationModal";
+import EquipmentsModal from "@/components/equipments/EquipmentsModal";
+import CopyModal from "@/components/operations/CopyModal";
+import DeleteModal from "@/components/operations/DeleteModal";
+import RenameModal from "@/components/operations/RenameModal";
+import ReplaceModal from "@/components/operations/ReplaceModal";
+import AddSystemModal from "@/components/systems/AddSystemModal";
 
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  
+  const { fetchDestinations } = useDestinationStore(); // 👈
+  const { fetchSystems } = useSystemStore(); // 👈
+
   // Modal states
   const [showAddSystem, setShowAddSystem] = useState(false);
   const [showAddDestination, setShowAddDestination] = useState(false);
@@ -32,7 +34,12 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // 👇 Fetch initial data on app load
+    if (isAuthenticated) {
+      fetchDestinations();
+      fetchSystems();
+    }
+  }, [isAuthenticated]);
 
   if (!mounted) return null;
   if (!isAuthenticated) return <LoginPage />;
@@ -54,35 +61,64 @@ export default function Home() {
       <BottomSection />
 
       {/* Operation Modals */}
-      <AddSystemModal isOpen={showAddSystem} onClose={() => setShowAddSystem(false)} />
-      <AddDestinationModal isOpen={showAddDestination} onClose={() => setShowAddDestination(false)} />
+      <AddSystemModal
+        isOpen={showAddSystem}
+        onClose={() => setShowAddSystem(false)}
+      />
+      <AddDestinationModal
+        isOpen={showAddDestination}
+        onClose={() => setShowAddDestination(false)}
+      />
       <CopyModal isOpen={showCopy} onClose={() => setShowCopy(false)} />
       <DeleteModal isOpen={showDelete} onClose={() => setShowDelete(false)} />
       <RenameModal isOpen={showRename} onClose={() => setShowRename(false)} />
-      <ReplaceModal isOpen={showReplace} onClose={() => setShowReplace(false)} />
-      
+      <ReplaceModal
+        isOpen={showReplace}
+        onClose={() => setShowReplace(false)}
+      />
+
       {/* Equipments Modal */}
-      <EquipmentsModal isOpen={showEquipments} onClose={() => setShowEquipments(false)} />
+      <EquipmentsModal
+        isOpen={showEquipments}
+        onClose={() => setShowEquipments(false)}
+      />
 
       {/* About Modal */}
-      <Modal isOpen={showAbout} onClose={() => setShowAbout(false)} title="About">
+      <Modal
+        isOpen={showAbout}
+        onClose={() => setShowAbout(false)}
+        title="About"
+      >
         <div className="space-y-4 text-center py-6">
-            <h2 className="text-xl font-bold text-accent">Hyper Family ICT Manager</h2>
-            <p className="text-text-secondary">Version 1.0.0</p>
-            <div className="p-4 bg-bg-tertiary rounded-lg border border-border inline-block text-left">
-                <p><strong>Author:</strong> Ali Ajeli Lahiji</p>
-                <p><strong>Email:</strong> lahiji.ali@hyperfamili.com</p>
-                <p><strong>Tech Stack:</strong> Next.js, Tailwind, Electron</p>
-            </div>
-            <p className="text-xs text-text-muted mt-4">© 2024 Hyper Family Chain Stores. All rights reserved.</p>
+          <h2 className="text-xl font-bold text-accent">
+            Hyper Family ICT Manager
+          </h2>
+          <p className="text-text-secondary">Version 1.0.0</p>
+          <div className="p-4 bg-bg-tertiary rounded-lg border border-border inline-block text-left">
+            <p>
+              <strong>Author:</strong> Ali Ajeli Lahiji
+            </p>
+            <p>
+              <strong>Email:</strong> lahiji.ali@hyperfamili.com
+            </p>
+            <p>
+              <strong>Tech Stack:</strong> Next.js, Tailwind, Electron
+            </p>
+          </div>
+          <p className="text-xs text-text-muted mt-4">
+            © 2024 Hyper Family Chain Stores. All rights reserved.
+          </p>
         </div>
       </Modal>
 
       {/* Settings Modal Placeholder */}
-      <Modal isOpen={showSettings} onClose={() => setShowSettings(false)} title="Settings">
+      <Modal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Settings"
+      >
         <p>Settings page coming soon...</p>
       </Modal>
-
     </MainLayout>
   );
 }

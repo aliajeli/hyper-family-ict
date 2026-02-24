@@ -5,37 +5,19 @@
       "branch": "Lahijan",
       "name": "Checkout 1",
       "ip": "172.18.168.32",
-      "id": "dest_1771073367399",
-      "createdAt": "2026-02-14T12:49:27.399Z",
-      "updatedAt": "2026-02-14T12:49:27.399Z"
-    },
-    {
-      "district": "14",
-      "branch": "Lahijan",
-      "name": "Checkout 1",
-      "ip": "172.18.168.32",
-      "id": "dest_1771134366642",
-      "createdAt": "2026-02-15T05:46:06.642Z",
-      "updatedAt": "2026-02-15T05:46:06.642Z"
-    },
-    {
-      "district": "14",
-      "branch": "Lahijan",
-      "name": "Test",
-      "ip": "127.0.0.1",
-      "id": "dest_1771139714245",
-      "createdAt": "2026-02-15T07:15:14.245Z",
-      "updatedAt": "2026-02-15T07:15:14.245Z"
+      "id": "dest_1771914082733",
+      "createdAt": "2026-02-24T06:21:22.733Z",
+      "updatedAt": "2026-02-24T06:21:22.733Z"
     },
     {
       "district": "14",
       "branch": "Lahijan",
       "name": "Checkout 2",
       "ip": "172.18.168.33",
-      "id": "dest_1771151711801",
-      "createdAt": "2026-02-15T10:35:11.801Z",
-      "updatedAt": "2026-02-15T10:35:11.801Z"
+      "id": "dest_1771914092311",
+      "createdAt": "2026-02-24T06:21:32.311Z",
+      "updatedAt": "2026-02-24T06:21:32.311Z"
     }
   ],
-  "updatedAt": "2026-02-15T10:35:11.801Z"
+  "updatedAt": "2026-02-24T07:13:06.869Z"
 }

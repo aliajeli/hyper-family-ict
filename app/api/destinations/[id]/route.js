@@ -1,65 +1,27 @@
-import { db } from '@/lib/database';
-import { NextResponse } from 'next/server';
+import { db } from "@/lib/database";
+import { NextResponse } from "next/server";
 
-// GET single destination
-export async function GET(request, { params }) {
+export async function DELETE(request, context) {
+  // 👈 context را اضافه کنید
   try {
-    const { id } = params;
-    const destination = await db.destinations.getById(id);
+    // روش امن برای گرفتن params در تمام نسخه‌های Next.js
+    const params = await context.params;
+    const id = params.id;
 
-    if (!destination) {
-      return NextResponse.json(
-        { error: 'Destination not found' },
-        { status: 404 }
-      );
+    console.log(`🗑️ Deleting Destination ID: ${id}`); // باید مقدار واقعی چاپ شود
+
+    if (!id || id === "undefined") {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    return NextResponse.json(destination);
-  } catch (error) {
-    console.error('Error fetching destination:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch destination' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update destination
-export async function PUT(request, { params }) {
-  try {
-    const { id } = params;
-    const data = await request.json();
-
-    const updatedDestination = await db.destinations.update(id, data);
-    return NextResponse.json(updatedDestination);
-  } catch (error) {
-    console.error('Error updating destination:', error);
-    
-    if (error.message === 'Destination not found') {
-      return NextResponse.json(
-        { error: 'Destination not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update destination' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE destination
-export async function DELETE(request, { params }) {
-  try {
-    const { id } = params;
     await db.destinations.delete(id);
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting destination:', error);
+    console.error("Error deleting destination:", error);
     return NextResponse.json(
-      { error: 'Failed to delete destination' },
-      { status: 500 }
+      { error: "Failed to delete destination" },
+      { status: 500 },
     );
   }
 }
