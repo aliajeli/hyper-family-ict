@@ -8,8 +8,6 @@ export async function DELETE(request, context) {
     const params = await context.params;
     const id = params.id;
 
-    console.log(`🗑️ Deleting Destination ID: ${id}`); // باید مقدار واقعی چاپ شود
-
     if (!id || id === "undefined") {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }

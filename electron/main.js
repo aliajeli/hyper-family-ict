@@ -150,11 +150,6 @@ ipcMain.handle("connect-rdp", async (event, ip) => {
 
 // Copy File/Folder Handler (Debug Version)
 ipcMain.handle("fs-copy", async (event, { source, destination }) => {
-  console.log("------------------------------------------------");
-  console.log("📥 COPY REQUEST RECEIVED");
-  console.log("📍 Source Raw:", source);
-  console.log("📍 Dest Raw:", destination);
-
   try {
     const fsExtra = require("fs-extra");
     const path = require("path");
@@ -162,9 +157,6 @@ ipcMain.handle("fs-copy", async (event, { source, destination }) => {
     // 1. Normalize Paths
     const src = path.resolve(source); // Resolve to absolute path
     const dest = path.resolve(destination); // Resolve to absolute path
-
-    console.log("✅ Normalized Source:", src);
-    console.log("✅ Normalized Dest:", dest);
 
     // 2. Check Source Existence
     if (!fsExtra.existsSync(src)) {
@@ -174,19 +166,14 @@ ipcMain.handle("fs-copy", async (event, { source, destination }) => {
 
     // 3. Ensure Destination Directory Exists
     const destDir = path.dirname(dest);
-    console.log("📂 Ensuring directory exists:", destDir);
     await fsExtra.ensureDir(destDir);
 
     // 4. Perform Copy
-    console.log("🚀 Starting copy operation...");
     await fsExtra.copy(src, dest, { overwrite: true, errorOnExist: false });
 
-    console.log("🎉 Copy Success!");
-    console.log("------------------------------------------------");
     return { success: true };
   } catch (error) {
     console.error("❌ COPY FAILED:", error);
-    console.log("------------------------------------------------");
     return { success: false, error: error.message };
   }
 });
@@ -287,14 +274,8 @@ ipcMain.handle("service-manage", async (event, { ip, serviceName, action }) => {
   const { exec } = require("child_process");
   const command = `sc \\\\${ip} ${action} "${serviceName}"`;
 
-  console.log(`📡 Executing: ${command}`); // Log Command
-
   return new Promise((resolve) => {
     exec(command, (error, stdout, stderr) => {
-      console.log("🔹 SC STDOUT:", stdout);
-      console.log("🔸 SC STDERR:", stderr);
-      console.log("🔻 SC ERROR:", error ? error.message : "None");
-
       // اگر خروجی شامل کلمات کلیدی موفقیت بود، قبول کن
       // 1062 = Service has not been started (یعنی قبلاً استاپ بوده، پس موفق فرض می‌کنیم)
       // 1056 = An instance of the service is already running (یعنی قبلاً استارت بوده، پس موفق فرض می‌کنیم)
@@ -318,13 +299,8 @@ ipcMain.handle("send-msg", async (event, { ip, message }) => {
   const { exec } = require("child_process");
   const command = `msg * /server:${ip} "${message}"`;
 
-  console.log(`📡 Executing: ${command}`);
-
   return new Promise((resolve) => {
     exec(command, (error, stdout, stderr) => {
-      console.log("🔹 MSG STDOUT:", stdout);
-      console.log("🔸 MSG STDERR:", stderr);
-
       if (error) {
         resolve({ success: false, error: stderr || error.message });
       } else {

@@ -46,9 +46,6 @@ const CopyModal = ({ isOpen, onClose }) => {
 
   //---------------------------------------
 
-  console.log("--- COPY MODAL DEBUG ---");
-  console.log("Store Destinations Count:", destinations.length);
-  console.log("Store Destinations:", destinations);
   //---------------------------------------
 
   useEffect(() => {

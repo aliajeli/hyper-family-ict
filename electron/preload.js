@@ -35,7 +35,6 @@ contextBridge.exposeInMainWorld("electron", {
 
   // File Operations
   copy: (source, destination) => {
-    console.log("[Preload] Sending copy request:", source, "->", destination); // برای دیباگ
     return ipcRenderer.invoke("fs-copy", { source, destination });
   },
   delete: (path) => ipcRenderer.invoke("fs-delete", path),
