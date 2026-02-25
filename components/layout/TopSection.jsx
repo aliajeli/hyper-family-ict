@@ -69,11 +69,10 @@ const TopSection = ({
   const [showSelector, setShowSelector] = useState(false);
   const [actionType, setActionType] = useState(null); // 'start', 'stop', 'message'
 
-  // --- Handlers ---
   const handleToggleMonitoring = () => {
     if (isMonitoring) {
-      stopMonitoring();
-      toast("Monitoring Stopped", { icon: "🛑" });
+      stopMonitoring(); // این حالا ریست هم می‌کند
+      toast("Monitoring Stopped & Reset", { icon: "🛑" });
     } else {
       startMonitoring([]);
       toast.success("Monitoring Started");

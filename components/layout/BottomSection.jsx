@@ -44,13 +44,13 @@ const DeviceIcon = ({ type, className }) => {
   return <Icon className={className} />;
 };
 
-// --- Status Dot ---
+// ...
 const StatusDot = ({ status }) => {
   const colors = {
     online: "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]",
     offline: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]",
     checking: "bg-amber-500 animate-pulse",
-    unknown: "bg-slate-600",
+    unknown: "bg-slate-700", // رنگ خاموش (تیره)
   };
   return (
     <div
@@ -61,6 +61,7 @@ const StatusDot = ({ status }) => {
     />
   );
 };
+// ...
 
 // --- Device Item (Row) ---
 const DeviceItem = ({ device, status }) => {
@@ -136,25 +137,27 @@ const DeviceItem = ({ device, status }) => {
   );
 };
 
-// --- Branch Card ---
-const BranchColumn = ({ branch, systems, statuses }) => {
-  const branchSystems = systems.filter(
-    (s) => s.branch === branch.name || s.branch === branch.nameFa,
-  );
+// --- Branch Column (Card) ---
+const BranchColumn = ({ branchName, systems, statuses }) => {
+  // Filter systems belonging to this branch
+  const branchSystems = systems.filter((s) => s.branch === branchName);
+
+  // Calculate Stats
   const onlineCount = branchSystems.filter(
     (s) => statuses[s.id]?.status === "online",
   ).length;
   const totalCount = branchSystems.length;
 
-  // Calculate Health Percentage
+  // Health Percentage & Color
   const health =
     totalCount > 0 ? Math.round((onlineCount / totalCount) * 100) : 0;
-  const healthColor =
-    health === 100
-      ? "bg-emerald-500"
-      : health > 50
-        ? "bg-amber-500"
-        : "bg-rose-500";
+  let healthColor = "bg-slate-700";
+  if (totalCount > 0) {
+    if (health === 100)
+      healthColor = "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]";
+    else if (health > 50) healthColor = "bg-amber-500";
+    else healthColor = "bg-rose-500";
+  }
 
   return (
     <div className="flex flex-col w-[260px] min-w-[260px] h-full bg-[#0f172a] border-r border-slate-800 last:border-r-0 relative group">
@@ -163,15 +166,16 @@ const BranchColumn = ({ branch, systems, statuses }) => {
         <div className="flex justify-between items-start mb-2">
           <div>
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5 text-blue-400" /> {branch.name}
+              <MapPin className="w-3.5 h-3.5 text-blue-400" /> {branchName}
             </h3>
-            <span className="text-[10px] text-slate-500 ml-5 block">
-              {branch.nameFa}
-            </span>
+            {/* Optional: Add city code or details here */}
           </div>
           <div
             className={cn(
-              "text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700",
+              "text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors duration-500",
+              onlineCount === totalCount && totalCount > 0
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-slate-800 text-slate-400 border-slate-700",
             )}
           >
             {onlineCount}/{totalCount}
@@ -182,7 +186,7 @@ const BranchColumn = ({ branch, systems, statuses }) => {
         <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
           <div
             className={cn(
-              "h-full transition-all duration-1000 ease-out",
+              "h-full transition-all duration-1000 ease-out rounded-r-full",
               healthColor,
             )}
             style={{ width: `${health}%` }}
@@ -193,11 +197,11 @@ const BranchColumn = ({ branch, systems, statuses }) => {
       {/* Device List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar bg-[#0b1120]">
         {branchSystems.length > 0 ? (
-          branchSystems.map((device) => (
+          branchSystems.map((sys) => (
             <DeviceItem
-              key={device.id}
-              device={device}
-              status={statuses[device.id]?.status || "unknown"}
+              key={sys.id}
+              device={sys}
+              status={statuses[sys.id]?.status || "unknown"}
             />
           ))
         ) : (
@@ -214,30 +218,25 @@ const BranchColumn = ({ branch, systems, statuses }) => {
 const BottomSection = () => {
   const { systems, fetchSystems } = useSystemStore();
   const { statuses, isMonitoring } = useMonitoringStore();
-  const [branches, setBranches] = useState([]);
+
+  // Defined Branches
+  const branches = ["Lahijan", "Ramsar", "Nowshahr", "Royan"];
 
   useEffect(() => {
     fetchSystems();
-    fetchBranches();
   }, []);
 
-  const fetchBranches = async () => {
-    try {
-      const res = await fetch("/api/branches");
-      const data = await res.json();
-      setBranches(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
+  // Global Stats
   const totalDevices = systems.length;
   const onlineDevices = Object.values(statuses).filter(
     (s) => s.status === "online",
   ).length;
+  const offlineDevices = Object.values(statuses).filter(
+    (s) => s.status === "offline",
+  ).length;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#020617] overflow-hidden relative">
+    <div className="flex-1 flex flex-col bg-[#020617] overflow-hidden relative border-t border-slate-800">
       {/* Global Status Bar */}
       <div className="h-9 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between px-4 shrink-0 shadow-sm z-20">
         <div className="flex items-center gap-4">
@@ -258,13 +257,18 @@ const BottomSection = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[10px] font-medium text-emerald-400">
+              <span className="text-[10px] font-medium text-emerald-400 tracking-wide">
                 LIVE MONITORING
               </span>
             </div>
           )}
-          <div className="text-[10px] text-slate-400 font-mono">
-            {onlineDevices} Online / {totalDevices - onlineDevices} Offline
+          <div className="flex gap-2">
+            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 rounded border border-emerald-500/20">
+              ON: {onlineDevices}
+            </span>
+            <span className="text-[10px] text-rose-400 font-mono bg-rose-500/10 px-1.5 rounded border border-rose-500/20">
+              OFF: {offlineDevices}
+            </span>
           </div>
         </div>
       </div>
@@ -272,23 +276,18 @@ const BottomSection = () => {
       {/* Main Grid Area */}
       <div className="flex-1 overflow-x-auto overflow-y-hidden bg-[#020617]">
         <div className="flex h-full divide-x divide-slate-800 min-w-max">
-          {branches.map((branch) => (
+          {branches.map((branchName) => (
             <BranchColumn
-              key={branch.id}
-              branch={branch}
+              key={branchName}
+              branchName={branchName}
               systems={systems}
               statuses={statuses}
             />
           ))}
 
-          {/* Add Branch Placeholder */}
-          <div className="w-[200px] h-full flex items-center justify-center border-r border-slate-800 border-dashed bg-[#0f172a]/30 hover:bg-[#0f172a]/50 transition-colors cursor-pointer group">
-            <div className="flex flex-col items-center gap-2 text-slate-600 group-hover:text-slate-400">
-              <div className="p-3 rounded-full border border-slate-700 bg-slate-800/50 group-hover:scale-110 transition-transform">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-medium">Add Branch</span>
-            </div>
+          {/* Placeholder for future branches */}
+          <div className="w-[100px] h-full bg-[#0f172a]/20 flex items-center justify-center border-r border-slate-800/50">
+            <MapPin className="w-6 h-6 text-slate-700 opacity-50" />
           </div>
         </div>
       </div>

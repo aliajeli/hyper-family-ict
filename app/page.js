@@ -3,6 +3,7 @@
 import { LoginPage } from "@/components/auth";
 import { BottomSection, MainLayout, TopSection } from "@/components/layout";
 import { Modal } from "@/components/ui";
+import { useMonitoring } from "@/hooks/useMonitoring"; // 👈 Import
 import { useAuthStore, useDestinationStore, useSystemStore } from "@/store"; // 👈 Import stores
 import { useEffect, useState } from "react";
 
@@ -31,6 +32,8 @@ export default function Home() {
   const [showEquipments, setShowEquipments] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  useMonitoring();
 
   useEffect(() => {
     setMounted(true);
