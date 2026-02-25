@@ -19,10 +19,30 @@ import {
   ShoppingCart,
   Trash2,
   Video,
-  X,
 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+
+// Icon Mapping Helper (Internal)
+const getDeviceIcon = (type) => {
+  switch (type) {
+    case "Router":
+      return Router;
+    case "Switch":
+      return Network;
+    case "Server":
+    case "Kyan":
+    case "ESXi":
+    case "iLO":
+      return Server;
+    case "NVR":
+      return Video;
+    case "Checkout":
+      return ShoppingCart;
+    default:
+      return Monitor;
+  }
+};
 
 const deviceTypes = [
   { value: "Router", label: "Router", icon: Router, color: "text-orange-400" },
@@ -47,11 +67,12 @@ const serverSubTypes = ["Kyan", "ESXi", "iLO"];
 const branches = ["Lahijan", "Ramsar", "Nowshahr", "Royan"];
 
 const AddSystemModal = ({ isOpen, onClose }) => {
-  const { systems, addSystem, deleteSystem } = useSystemStore();
+  const { systems, addSystem, deleteSystem, updateSystem } = useSystemStore();
   const [activeTab, setActiveTab] = useState("add");
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [expandedBranches, setExpandedBranches] = useState(branches);
+  const [editId, setEditId] = useState(null);
 
   const [formData, setFormData] = useState({
     branch: "Lahijan",
@@ -64,17 +85,48 @@ const AddSystemModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.ip) return toast.error("Required");
+
     setIsLoading(true);
-    await addSystem({
-      ...formData,
-      type:
-        formData.type === "Server" && formData.subType
-          ? formData.subType
-          : formData.type,
-      status: "unknown",
-    });
+    const finalType =
+      formData.type === "Server" && formData.subType
+        ? formData.subType
+        : formData.type;
+
+    if (editId) {
+      await updateSystem(editId, { ...formData, type: finalType });
+      toast.success("System Updated");
+      setEditId(null);
+    } else {
+      await addSystem({ ...formData, type: finalType, status: "unknown" });
+      toast.success("System Added");
+    }
+
     setIsLoading(false);
-    toast.success("System Added");
+    setFormData({ ...formData, name: "", ip: "" });
+  };
+
+  const handleEdit = (sys) => {
+    // Determine if subtype
+    let type = sys.type;
+    let subType = "";
+    if (["Kyan", "ESXi", "iLO"].includes(sys.type)) {
+      type = "Server";
+      subType = sys.type;
+    }
+
+    setFormData({
+      branch: sys.branch,
+      type,
+      subType,
+      name: sys.name,
+      ip: sys.ip,
+    });
+    setEditId(sys.id);
+    setActiveTab("add");
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
     setFormData({ ...formData, name: "", ip: "" });
   };
 
@@ -93,7 +145,6 @@ const AddSystemModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Safe Filtering Logic
   const filteredSystems = systems.filter(
     (sys) =>
       (sys.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
@@ -124,7 +175,12 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               : "border-transparent text-slate-400",
           )}
         >
-          <PlusCircle className="w-3.5 h-3.5" /> Register New
+          {editId ? (
+            <Edit2 className="w-3.5 h-3.5" />
+          ) : (
+            <PlusCircle className="w-3.5 h-3.5" />
+          )}{" "}
+          {editId ? "Edit System" : "Register New"}
         </button>
         <button
           onClick={() => setActiveTab("manage")}
@@ -143,9 +199,10 @@ const AddSystemModal = ({ isOpen, onClose }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 min-h-0 bg-gradient-to-b from-[#0f172a] to-[#1e293b]">
-        {/* === TAB 1: ADD === */}
+        {/* === TAB 1: ADD / EDIT === */}
         {activeTab === "add" && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Branch */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
                 Location
@@ -169,9 +226,10 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
+            {/* Type Selection */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                Type
+                Device Type
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {deviceTypes.map((t) => (
@@ -201,6 +259,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
+            {/* SubType */}
             {formData.type === "Server" && (
               <div className="flex gap-2 bg-indigo-500/10 p-1.5 rounded-lg border border-indigo-500/20">
                 {serverSubTypes.map((sub) => (
@@ -221,6 +280,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
+            {/* Inputs */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">
@@ -237,7 +297,7 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">
-                  IP
+                  IP Address
                 </label>
                 <input
                   value={formData.ip}
@@ -250,13 +310,29 @@ const AddSystemModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-slate-700/50">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/50">
+              {editId && (
+                <Button
+                  type="button"
+                  onClick={cancelEdit}
+                  variant="ghost"
+                  className="text-slate-400 h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 type="submit"
                 isLoading={isLoading}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 h-8 text-xs shadow-lg"
+                className={cn(
+                  "text-white px-5 h-8 text-xs shadow-lg",
+                  editId
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : "bg-emerald-600 hover:bg-emerald-500",
+                )}
               >
-                <Save className="w-3.5 h-3.5 mr-1.5" /> Save
+                <Save className="w-3.5 h-3.5 mr-1.5" />{" "}
+                {editId ? "Update System" : "Register System"}
               </Button>
             </div>
           </form>
@@ -307,37 +383,44 @@ const AddSystemModal = ({ isOpen, onClose }) => {
 
                     {isExpanded && items.length > 0 && (
                       <div className="divide-y divide-slate-700/50">
-                        {items.map((sys) => (
-                          <div
-                            key={sys.id}
-                            className="grid grid-cols-12 items-center px-3 py-2 hover:bg-slate-700/20 transition-colors group"
-                          >
-                            <div className="col-span-5">
-                              <div className="text-xs font-medium text-slate-200">
-                                {sys.name}
+                        {items.map((sys) => {
+                          const Icon = getDeviceIcon(sys.type);
+                          return (
+                            <div
+                              key={sys.id}
+                              className="grid grid-cols-12 items-center px-3 py-2 hover:bg-slate-700/20 transition-colors group"
+                            >
+                              <div className="col-span-5 flex items-center gap-2">
+                                <Icon className="w-4 h-4 text-blue-400 opacity-80" />
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium text-slate-200">
+                                    {sys.name}
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 font-mono">
+                                    {sys.ip}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="text-[10px] text-slate-500 font-mono">
-                                {sys.ip}
+                              <div className="col-span-5 flex items-center gap-1.5 text-[11px] text-slate-400">
+                                {sys.type}
+                              </div>
+                              <div className="col-span-2 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => handleEdit(sys)}
+                                  className="p-1 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 rounded"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(sys.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
-                            <div className="col-span-5 flex items-center gap-1.5 text-[11px] text-slate-400">
-                              <Server className="w-3 h-3" /> {sys.type}
-                            </div>
-                            <div className="col-span-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => handleDelete(sys.id)}
-                                className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {isExpanded && items.length === 0 && (
-                      <div className="p-3 text-center text-[10px] text-slate-600">
-                        No systems
+                          );
+                        })}
                       </div>
                     )}
                   </div>

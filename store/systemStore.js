@@ -50,6 +50,30 @@ const useSystemStore = create((set, get) => ({
       return { success: false, error: error.message };
     }
   },
+  updateSystem: async (id, updates) => {
+    try {
+      const res = await fetch(`/api/systems/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!res.ok) throw new Error("Update failed");
+
+      const updatedSys = await res.json();
+
+      console.log("✅ Updated System from API:", updatedSys);
+
+      set((state) => ({
+        // جایگزینی آیتم قدیمی با جدید
+        systems: state.systems.map((s) => (s.id === id ? updatedSys : s)),
+      }));
+      return { success: true };
+    } catch (error) {
+      console.error(error);
+      return { success: false, error: error.message };
+    }
+  },
 }));
 
 export default useSystemStore;

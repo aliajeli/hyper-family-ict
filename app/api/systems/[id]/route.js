@@ -1,65 +1,24 @@
-import { db } from '@/lib/database';
-import { NextResponse } from 'next/server';
+import { db } from "@/lib/database";
+import { NextResponse } from "next/server";
 
-// GET single system
-export async function GET(request, { params }) {
+export async function PUT(request, context) {
   try {
+    // 👇 این خط حیاتی است
+    const params = await context.params;
     const { id } = params;
-    const system = await db.systems.getById(id);
 
-    if (!system) {
-      return NextResponse.json(
-        { error: 'System not found' },
-        { status: 404 }
-      );
+    if (!id || id === "undefined") {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
-    return NextResponse.json(system);
+    const updates = await request.json();
+    console.log(`🔄 Updating System ID: ${id}`);
+
+    const updated = await db.systems.update(id, updates);
+
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error fetching system:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch system' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT update system
-export async function PUT(request, { params }) {
-  try {
-    const { id } = params;
-    const data = await request.json();
-
-    const updatedSystem = await db.systems.update(id, data);
-    return NextResponse.json(updatedSystem);
-  } catch (error) {
-    console.error('Error updating system:', error);
-    
-    if (error.message === 'System not found') {
-      return NextResponse.json(
-        { error: 'System not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update system' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE system
-export async function DELETE(request, { params }) {
-  try {
-    const { id } = params;
-    await db.systems.delete(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting system:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete system' },
-      { status: 500 }
-    );
+    console.error("Update API Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

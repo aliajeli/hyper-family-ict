@@ -1,7 +1,9 @@
 "use client";
 
+import AboutModal from "@/components/about/AboutModal"; // 👈 Import
 import { LoginPage } from "@/components/auth";
 import { BottomSection, MainLayout, TopSection } from "@/components/layout";
+import SettingsModal from "@/components/settings/SettingsModal"; // 👈 Import
 import { Modal } from "@/components/ui";
 import { useMonitoring } from "@/hooks/useMonitoring"; // 👈 Import
 import { useAuthStore, useDestinationStore, useSystemStore } from "@/store"; // 👈 Import stores
@@ -87,41 +89,13 @@ export default function Home() {
       />
 
       {/* About Modal */}
-      <Modal
-        isOpen={showAbout}
-        onClose={() => setShowAbout(false)}
-        title="About"
-      >
-        <div className="space-y-4 text-center py-6">
-          <h2 className="text-xl font-bold text-accent">
-            Hyper Family ICT Manager
-          </h2>
-          <p className="text-text-secondary">Version 1.0.0</p>
-          <div className="p-4 bg-bg-tertiary rounded-lg border border-border inline-block text-left">
-            <p>
-              <strong>Author:</strong> Ali Ajeli Lahiji
-            </p>
-            <p>
-              <strong>Email:</strong> lahiji.ali@hyperfamili.com
-            </p>
-            <p>
-              <strong>Tech Stack:</strong> Next.js, Tailwind, Electron
-            </p>
-          </div>
-          <p className="text-xs text-text-muted mt-4">
-            © 2024 Hyper Family Chain Stores. All rights reserved.
-          </p>
-        </div>
-      </Modal>
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
-      {/* Settings Modal Placeholder */}
-      <Modal
+      {/* Settings Modal */}
+      <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        title="Settings"
-      >
-        <p>Settings page coming soon...</p>
-      </Modal>
+      />
     </MainLayout>
   );
 }

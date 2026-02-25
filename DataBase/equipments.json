@@ -1,4 +1,55 @@
 {
-  "data": [],
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "data": [
+    {
+      "type": "Client",
+      "branch": "Lahijan",
+      "name": "IT Client",
+      "hostname": "test",
+      "ip": "172.18.168.43",
+      "subItems": [],
+      "id": "eq_1772014688849",
+      "createdAt": "2026-02-25T10:18:08.850Z"
+    },
+    {
+      "type": "Switch",
+      "branch": "Lahijan",
+      "name": "1",
+      "location": "server",
+      "model": "2960",
+      "ip": "172.18.168.17",
+      "sn": "65465",
+      "subItems": [
+        {
+          "status": "Empty",
+          "details": "321",
+          "port": "1",
+          "ip": "231"
+        }
+      ],
+      "id": "eq_1772015913997",
+      "createdAt": "2026-02-25T10:38:33.997Z"
+    },
+    {
+      "type": "Checkout",
+      "branch": "Lahijan",
+      "number": "1",
+      "hostname": "1",
+      "ip": "1",
+      "swIp": "1",
+      "swPort": "1",
+      "subItems": [
+        {
+          "subType": "POS",
+          "brand": "1"
+        },
+        {
+          "subType": "Monitor 2",
+          "sn": "2"
+        }
+      ],
+      "id": "eq_1772017245974",
+      "createdAt": "2026-02-25T11:00:45.974Z"
+    }
+  ],
+  "updatedAt": "2026-02-25T11:02:35.561Z"
 }
