@@ -1,151 +1,226 @@
-'use client';
+"use client";
 
-import { Button, Card, Checkbox, Input } from '@/components/ui';
-import { APP_NAME } from '@/lib/constants';
-import { useAuthStore, useThemeStore } from '@/store';
-import { motion } from 'framer-motion';
-import { AlertCircle, Eye, EyeOff, Lock, LogIn, User } from 'lucide-react';
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { Button } from "@/components/ui";
+import { useAuthStore } from "@/store";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Lock,
+  LogIn,
+  Power,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  
-  const { login, isLoading, error, clearError } = useAuthStore();
-  const { language } = useThemeStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(""); // State for error
+  const [shake, setShake] = useState(false); // State for shake animation
 
-  const handleSubmit = async (e) => {
+  const { login } = useAuthStore();
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    clearError();
+    setErrorMsg(""); // Reset Error
 
     if (!username || !password) {
-      toast.error('Please fill in all fields');
+      showError("Please enter valid credentials.");
       return;
     }
 
+    setIsLoading(true);
+    // Simulate delay for realism
+    await new Promise((r) => setTimeout(r, 800));
+
     const result = await login(username, password);
-    
+    setIsLoading(false);
+
     if (result.success) {
-      toast.success('Welcome back!');
+      toast.success("Authentication Successful");
     } else {
-      toast.error(result.message || 'Login failed');
+      showError(result.message || "Invalid username or password.");
     }
   };
 
+  const showError = (msg) => {
+    setErrorMsg(msg);
+    setShake(true);
+    setTimeout(() => setShake(false), 500); // Reset shake
+  };
+
+  const handleExit = () => {
+    if (window.electron) window.electron.close();
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-[#020617] overflow-hidden select-none font-sans">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[150px] rounded-full animate-pulse-slow"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-600/10 blur-[150px] rounded-full animate-pulse-slow delay-1000"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)]"></div>
       </div>
 
+      {/* Login Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md relative"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          x: shake ? [0, -10, 10, -10, 10, 0] : 0,
+        }}
+        transition={{ duration: shake ? 0.4 : 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-[380px]"
       >
-        <Card className="p-8">
-          {/* Logo & Title */}
-          <div className="text-center mb-8">
+        <div className="bg-[#0f172a]/90 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/5">
+          {/* Header */}
+          <div className="pt-8 pb-6 text-center border-b border-slate-800 bg-[#1e293b]/30">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-              className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-accent flex items-center justify-center"
+              transition={{ delay: 0.2, type: "spring" }}
+              className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/20 mb-4 ring-1 ring-white/10"
             >
-              <span className="text-2xl font-bold text-white">HF</span>
+              <ShieldCheck className="w-8 h-8 text-white" strokeWidth={2} />
             </motion.div>
-            <h1 className="text-2xl font-bold text-text-primary mb-2">
-              {APP_NAME}
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              Hyper Family ICT
             </h1>
-            <p className="text-text-secondary">
-              Sign in to your account
+            <p className="text-xs text-slate-400 mt-1 font-medium tracking-wide uppercase">
+              Enterprise Access Control
             </p>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 rounded-lg bg-error/10 border border-error/20 flex items-center gap-2"
-            >
-              <AlertCircle className="w-5 h-5 text-error flex-shrink-0" />
-              <span className="text-sm text-error">{error}</span>
-            </motion.div>
-          )}
+          {/* Form */}
+          <form onSubmit={handleLogin} className="p-6 space-y-5">
+            {/* Error Message (Modern Alert) */}
+            <AnimatePresence>
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, mb: 0 }}
+                  animate={{ opacity: 1, height: "auto", mb: 12 }}
+                  exit={{ opacity: 0, height: 0, mb: 0 }}
+                  className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3 flex items-start gap-3"
+                >
+                  <AlertTriangle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="text-xs font-bold text-rose-400">
+                      Access Denied
+                    </h4>
+                    <p className="text-[10px] text-rose-300/80 leading-tight mt-0.5">
+                      {errorMsg}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setErrorMsg("")}
+                    className="text-rose-400 hover:text-rose-200"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Username"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              icon={<User className="w-4 h-4" />}
-              disabled={isLoading}
-            />
-
-            <div className="relative">
-              <Input
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                icon={<Lock className="w-4 h-4" />}
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-text-muted hover:text-text-secondary transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
+            {/* Username Input */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">
+                Identity
+              </label>
+              <div className="relative group">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setErrorMsg("");
+                  }}
+                  className="w-full h-11 bg-[#0b1120] border border-slate-700 rounded-xl pl-10 pr-4 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-inner"
+                  placeholder="Username"
+                  autoFocus
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Checkbox
-                label="Remember me"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
+            {/* Password Input */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 tracking-wider">
+                Credentials
+              </label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrorMsg("");
+                  }}
+                  className="w-full h-11 bg-[#0b1120] border border-slate-700 rounded-xl pl-10 pr-10 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-inner"
+                  placeholder="Password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors p-1"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full"
-              size="lg"
               isLoading={isLoading}
-              leftIcon={<LogIn className="w-4 h-4" />}
+              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 text-xs tracking-wide uppercase mt-4 transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm"
             >
-              Sign In
+              <LogIn className="w-4 h-4 mr-2" /> Authenticate Session
             </Button>
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-text-muted">
-              Default: admin / admin
-            </p>
-          </div>
-        </Card>
+          <div className="bg-[#0b1120]/50 border-t border-slate-800 p-4 flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-slate-500">
+                System Status: <span className="text-emerald-500">ONLINE</span>
+              </span>
+              <span className="text-[9px] text-slate-600">
+                v1.2.0 • Build 2024
+              </span>
+            </div>
 
-        {/* Version */}
-        <p className="text-center text-text-muted text-xs mt-4">
-          Version 1.0.0
-        </p>
+            <button
+              onClick={handleExit}
+              className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 hover:text-rose-400 transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-rose-500/30 hover:bg-rose-500/5"
+            >
+              <Power className="w-3.5 h-3.5" /> SHUTDOWN
+            </button>
+          </div>
+        </div>
       </motion.div>
+
+      {/* Footer Text */}
+      <div className="absolute bottom-6 text-center w-full z-10 opacity-40">
+        <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">
+          Restricted Access Area
+        </p>
+        <p className="text-[9px] text-slate-600">
+          Unauthorized access is prohibited and will be logged.
+        </p>
+      </div>
     </div>
   );
 };
