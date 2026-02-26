@@ -6,6 +6,11 @@ contextBridge.exposeInMainWorld("electron", {
   maximize: () => ipcRenderer.send("window-maximize"),
   close: () => ipcRenderer.send("window-close"),
 
+  // 👇 This line was missing or incorrect
+  checkPlink: () => ipcRenderer.invoke("check-plink"),
+
+  mikrotikInfo: (host) => ipcRenderer.invoke("mikrotik-info", { host }),
+
   // PowerShell
   powershell: (command) => ipcRenderer.invoke("exec-powershell", command),
 
@@ -32,6 +37,7 @@ contextBridge.exposeInMainWorld("electron", {
 
   // App Info
   platform: process.platform,
+  checkPlink: () => ipcRenderer.invoke("check-plink"),
 
   // File Operations
   copy: (source, destination) => {
@@ -49,4 +55,6 @@ contextBridge.exposeInMainWorld("electron", {
       username: user,
       password: pass,
     }),
+  mikrotikInfo: (host, user, pass) =>
+    ipcRenderer.invoke("mikrotik-info", { host, user, pass }),
 });

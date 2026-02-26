@@ -1,62 +1,13 @@
-import { useMonitoringStore } from "@/store";
+import { useMonitoringStore, useSystemStore } from "@/store";
 import useSettingsStore from "@/store/settingsStore";
 import { useEffect, useRef } from "react";
 
 export const useBranchMonitoring = (branches) => {
   const { isMonitoring, setBranchStatus } = useMonitoringStore();
-  const { routerPingInterval, irTarget, globalTarget } = useSettingsStore();
+  const { systems } = useSystemStore();
+  const { routerPingInterval } = useSettingsStore();
   const timerRef = useRef(null);
 
-  const checkRouters = async () => {
-    for (const branch of branches) {
-      if (!branch.routerIp) continue;
-
-      // 1. Local Check (Ping Router from Server)
-      const localRes = await window.electron.exec(
-        `ping -n 1 ${branch.routerIp}`,
-      );
-      const isLocalUp =
-        localRes.success && !localRes.output.includes("Unreachable");
-
-      setBranchStatus(branch.id, "local", isLocalUp ? "online" : "offline");
-
-      // Only check internet if router is reachable
-      if (isLocalUp) {
-        // TODO: Get router credentials from secure store or settings
-        const user = "admin";
-        const pass = "password";
-
-        // 2. Intranet Check
-        const irRes = await window.electron.sshPing(
-          branch.routerIp,
-          irTarget,
-          user,
-          pass,
-        );
-        setBranchStatus(branch.id, "ir", irRes.success ? "online" : "offline");
-
-        // 3. Internet Check
-        const globalRes = await window.electron.sshPing(
-          branch.routerIp,
-          globalTarget,
-          user,
-          pass,
-        );
-        setBranchStatus(
-          branch.id,
-          "global",
-          globalRes.success ? "online" : "offline",
-        );
-      } else {
-        setBranchStatus(branch.id, "ir", "offline");
-        setBranchStatus(branch.id, "global", "offline");
-      }
-    }
-
-    if (isMonitoring) {
-      timerRef.current = setTimeout(checkRouters, routerPingInterval);
-    }
-  };
   useEffect(() => {
     if (isMonitoring && branches.length > 0) {
       checkRouters();
@@ -64,5 +15,33 @@ export const useBranchMonitoring = (branches) => {
       if (timerRef.current) clearTimeout(timerRef.current);
     }
     return () => clearTimeout(timerRef.current);
-  }, [isMonitoring, branches]);
+  }, [isMonitoring, branches, systems]);
+
+  const checkRouters = async () => {
+    for (const branch of branches) {
+      // Find Router IP
+      const routerSystem = systems.find(
+        (s) => s.branch === branch.name && s.type === "Router",
+      );
+      const targetIp = branch.routerIp || routerSystem?.ip;
+
+      if (!targetIp) {
+        setBranchStatus(branch.id, "local", "unknown");
+        continue;
+      }
+
+      // Simple Ping Check
+      const localRes = await window.electron.exec(`ping -n 1 ${targetIp}`);
+      const isOnline =
+        localRes.success &&
+        !localRes.output.includes("Unreachable") &&
+        !localRes.output.includes("timed out");
+
+      setBranchStatus(branch.id, "local", isOnline ? "online" : "offline");
+    }
+
+    if (useMonitoringStore.getState().isMonitoring) {
+      timerRef.current = setTimeout(checkRouters, routerPingInterval || 60000);
+    }
+  };
 };
