@@ -9,6 +9,7 @@ const useMonitoringStore = create((set, get) => ({
     set({
       isMonitoring: false,
       statuses: {}, // خالی کردن وضعیت‌ها -> برگشت به حالت دیفالت (خاکستری)
+      branchStatus: {}, // 👈 این خط اضافه شود
     });
   },
 
@@ -28,6 +29,20 @@ const useMonitoringStore = create((set, get) => ({
   stopMonitoring: () => {
     // به جای فقط false کردن، ریست کامل را صدا می‌زنیم
     get().resetMonitoring();
+  },
+
+  branchStatus: {}, // { branchId: { local: 'online', ir: 'online', global: 'offline' } }
+
+  setBranchStatus: (branchId, type, status) => {
+    set((state) => ({
+      branchStatus: {
+        ...state.branchStatus,
+        [branchId]: {
+          ...state.branchStatus[branchId],
+          [type]: status,
+        },
+      },
+    }));
   },
 }));
 

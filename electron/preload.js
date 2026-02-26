@@ -42,4 +42,11 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("fs-rename", { oldPath, newPath }),
   exists: (path) => ipcRenderer.invoke("fs-exists", path),
   checksum: (path) => ipcRenderer.invoke("fs-checksum", path),
+  sshPing: (host, target, user, pass) =>
+    ipcRenderer.invoke("ssh-ping", {
+      host,
+      target,
+      username: user,
+      password: pass,
+    }),
 });

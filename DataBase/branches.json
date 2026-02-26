@@ -5,29 +5,33 @@
       "name": "Lahijan",
       "nameFa": "لاهیجان",
       "district": "14",
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "routerIp": "172.18.168.1"
     },
     {
       "id": "branch_2",
       "name": "Ramsar",
       "nameFa": "رامسر",
       "district": "14",
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "routerIp": "172.18.82.1"
     },
     {
       "id": "branch_3",
       "name": "Nowshahr",
       "nameFa": "نوشهر",
       "district": "14",
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "routerIp": "172.18.83.1"
     },
     {
       "id": "branch_4",
       "name": "Royan",
       "nameFa": "رویان",
       "district": "14",
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "routerIp": "172.18.82.129"
     }
   ],
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "updatedAt": "2026-02-26T00:41:56.579Z"
 }

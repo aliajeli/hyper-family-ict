@@ -4,6 +4,7 @@ const fs = require("fs").promises;
 const fsExtra = require("fs-extra"); // Make sure fs-extra is installed
 const { PowerShell } = require("node-powershell");
 const crypto = require("crypto");
+const { NodeSSH } = require("node-ssh");
 
 let mainWindow;
 
@@ -431,3 +432,30 @@ ipcMain.handle("fs-get-quick-access", async () => {
   // Filter out null paths (if folder doesn't exist)
   return folders.filter((f) => f.path !== null);
 });
+
+// SSH Ping Handler
+ipcMain.handle(
+  "ssh-ping",
+  async (event, { host, target, username, password }) => {
+    const ssh = new NodeSSH();
+    try {
+      console.log(`SSH Connecting to ${host}...`);
+      await ssh.connect({
+        host,
+        username: username || "admin",
+        password: password || "", // Ensure password is correct
+        tryKeyboard: true,
+      });
+
+      console.log(`Pinging ${target} from ${host}...`);
+      const result = await ssh.execCommand(`/ping ${target} count=1`);
+
+      ssh.dispose();
+      // MikroTik success check
+      return { success: result.stdout.includes("received=1") };
+    } catch (error) {
+      console.error("SSH Error:", error);
+      return { success: false };
+    }
+  },
+);

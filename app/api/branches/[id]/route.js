@@ -1,34 +1,33 @@
-import { db } from '@/lib/database';
-import { NextResponse } from 'next/server';
+import { db } from "@/lib/database";
+import { NextResponse } from "next/server";
 
-// PUT update branch
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
+  // 👈 context
   try {
+    const params = await context.params; // 👈 await params first
     const { id } = params;
-    const data = await request.json();
 
-    const updatedBranch = await db.branches.update(id, data);
-    return NextResponse.json(updatedBranch);
+    const updates = await request.json();
+
+    // حالا از id استفاده کنید
+    const updated = await db.branches.update(id, updates);
+
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error updating branch:', error);
-    return NextResponse.json(
-      { error: 'Failed to update branch' },
-      { status: 500 }
-    );
+    console.error("Update Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// DELETE branch
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
+  // 👈 DELETE هم همینطور
   try {
+    const params = await context.params;
     const { id } = params;
+
     await db.branches.delete(id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting branch:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete branch' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

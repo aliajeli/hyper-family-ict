@@ -9,9 +9,25 @@ const useSettingsStore = create(
       minimizeToTray: true,
 
       // Network
-      pingInterval: 5000,
       pingTimeout: 2000,
       autoStartMonitoring: false,
+
+      // Monitoring Config
+      pingInterval: 5000, // Local Ping (ms)
+      routerPingInterval: 60000, // Router SSH Ping (ms) - 1 min
+
+      // Targets
+      irTarget: "94.183.172.110", // AsiaTech Default
+      globalTarget: "8.8.8.8", // Google Default
+
+      // Custom Targets (For dropdown)
+      customIrTarget: "",
+      customGlobalTarget: "",
+
+      setIrTarget: (val) => set({ irTarget: val }),
+      setGlobalTarget: (val) => set({ globalTarget: val }),
+      setRouterPingInterval: (val) =>
+        set({ routerPingInterval: parseInt(val) || 60000 }),
 
       // Paths
       paths: {

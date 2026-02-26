@@ -2,6 +2,7 @@
 
 import { Button, Input, Modal } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import useBranchStore from "@/store/branchStore"; // 👈 Import Branch Store
 import useSettingsStore from "@/store/settingsStore";
 import {
   AlertTriangle,
@@ -9,6 +10,7 @@ import {
   Database,
   Download,
   FolderOpen,
+  MapPin,
   Monitor,
   Moon,
   Network,
@@ -19,7 +21,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const THEMES = [
@@ -39,9 +41,32 @@ const THEMES = [
   },
 ];
 
+const IR_SERVERS = [
+  { label: "AsiaTech", ip: "94.183.172.110" },
+  { label: "Pars Online", ip: "91.98.31.1" },
+  { label: "Respina", ip: "5.202.100.1" },
+  { label: "Shatel", ip: "85.15.1.14" },
+  { label: "MCI", ip: "151.232.0.1" },
+  { label: "MTN", ip: "5.213.233.1" },
+  { label: "Custom", ip: "custom" },
+];
+
+const GLOBAL_SERVERS = [
+  { label: "Google DNS 1", ip: "8.8.8.8" },
+  { label: "Google DNS 2", ip: "8.8.4.4" },
+  { label: "Cloudflare 1", ip: "1.1.1.1" },
+  { label: "Cloudflare 2", ip: "1.0.0.1" },
+  { label: "OpenDNS", ip: "208.67.222.222" },
+  { label: "Quad9", ip: "9.9.9.9" },
+  { label: "Google.com", ip: "google.com" },
+  { label: "Hetzner", ip: "hetzner.de" },
+  { label: "Custom", ip: "custom" },
+];
+
 const TABS = [
   { id: "general", label: "General", icon: Settings },
   { id: "network", label: "Network", icon: Network },
+  { id: "branches", label: "Locations", icon: MapPin }, // 👈 Branch Tab
   { id: "paths", label: "App Paths", icon: FolderOpen },
   { id: "data", label: "Data & Backup", icon: Database },
 ];
@@ -50,8 +75,17 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState("general");
   const settings = useSettingsStore();
 
+  // Branch Store
+  const { branches, addBranch, updateBranch, deleteBranch, fetchBranches } =
+    useBranchStore();
+
   const [localPaths, setLocalPaths] = useState(settings.paths || {});
   const [localInterval, setLocalInterval] = useState(settings.pingInterval);
+
+  // Fetch branches when tab opens
+  useEffect(() => {
+    if (isOpen && activeTab === "branches") fetchBranches();
+  }, [isOpen, activeTab]);
 
   const handleSave = () => {
     Object.keys(localPaths).forEach((key) =>
@@ -85,7 +119,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
       onClose={onClose}
       title="Settings"
       size="lg"
-      className="bg-[#0f172a] border-slate-700 h-[550px] flex flex-col p-0 overflow-hidden shadow-2xl rounded-2xl"
+      className="bg-[#0f172a] border-slate-700 h-[600px] flex flex-col p-0 overflow-hidden shadow-2xl rounded-2xl"
     >
       <div className="flex h-full">
         {/* Sidebar */}
@@ -201,23 +235,92 @@ const SettingsModal = ({ isOpen, onClose }) => {
               <h3 className="text-sm font-bold text-white border-b border-slate-700 pb-2">
                 Monitoring Configuration
               </h3>
+
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Ping Interval (ms)"
-                  placeholder="5000"
+                  label="System Ping Interval (ms)"
                   value={localInterval}
                   onChange={(e) => setLocalInterval(e.target.value)}
                   className="bg-[#0b1120] border-slate-600 text-slate-200"
                 />
                 <Input
-                  label="Timeout (ms)"
-                  placeholder="2000"
-                  className="bg-[#0b1120] border-slate-600 text-slate-200 opacity-50"
-                  disabled
-                  value="2000"
+                  label="Router Check Interval (ms)"
+                  value={settings.routerPingInterval}
+                  onChange={(e) =>
+                    settings.setRouterPingInterval(e.target.value)
+                  }
+                  className="bg-[#0b1120] border-slate-600 text-slate-200"
                 />
               </div>
-              <div className="flex items-center gap-3 mt-2 bg-slate-800/30 p-3 rounded border border-slate-700">
+
+              {/* IR Target */}
+              <div className="space-y-2">
+                <label className="text-xs text-slate-400 font-bold ml-1">
+                  Internet Check (IR)
+                </label>
+                <select
+                  className="w-full h-9 bg-[#0b1120] border border-slate-700 rounded-lg text-xs text-white px-2 focus:border-blue-500 focus:outline-none"
+                  value={
+                    IR_SERVERS.find((s) => s.ip === settings.irTarget)
+                      ? settings.irTarget
+                      : "custom"
+                  }
+                  onChange={(e) => {
+                    if (e.target.value === "custom") settings.setIrTarget("");
+                    else settings.setIrTarget(e.target.value);
+                  }}
+                >
+                  {IR_SERVERS.map((s) => (
+                    <option key={s.ip} value={s.ip}>
+                      {s.label} ({s.ip})
+                    </option>
+                  ))}
+                </select>
+                {(!IR_SERVERS.find((s) => s.ip === settings.irTarget) ||
+                  settings.irTarget === "") && (
+                  <Input
+                    placeholder="Enter Custom IP..."
+                    value={settings.irTarget}
+                    onChange={(e) => settings.setIrTarget(e.target.value)}
+                  />
+                )}
+              </div>
+
+              {/* Global Target */}
+              <div className="space-y-2">
+                <label className="text-xs text-slate-400 font-bold ml-1">
+                  Internet Check (Global)
+                </label>
+                <select
+                  className="w-full h-9 bg-[#0b1120] border border-slate-700 rounded-lg text-xs text-white px-2 focus:border-blue-500 focus:outline-none"
+                  value={
+                    GLOBAL_SERVERS.find((s) => s.ip === settings.globalTarget)
+                      ? settings.globalTarget
+                      : "custom"
+                  }
+                  onChange={(e) => {
+                    if (e.target.value === "custom")
+                      settings.setGlobalTarget("");
+                    else settings.setGlobalTarget(e.target.value);
+                  }}
+                >
+                  {GLOBAL_SERVERS.map((s) => (
+                    <option key={s.ip} value={s.ip}>
+                      {s.label} ({s.ip})
+                    </option>
+                  ))}
+                </select>
+                {(!GLOBAL_SERVERS.find((s) => s.ip === settings.globalTarget) ||
+                  settings.globalTarget === "") && (
+                  <Input
+                    placeholder="Enter Custom IP..."
+                    value={settings.globalTarget}
+                    onChange={(e) => settings.setGlobalTarget(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 mt-4 bg-slate-800/30 p-3 rounded border border-slate-700">
                 <input
                   type="checkbox"
                   className="accent-emerald-500 w-4 h-4"
@@ -232,6 +335,68 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     Start pinging automatically when app launches
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* BRANCHES TAB */}
+          {activeTab === "branches" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-700 pb-2 mb-4">
+                <h3 className="text-sm font-bold text-white">
+                  Branch Management
+                </h3>
+                <Button
+                  size="sm"
+                  onClick={() => addBranch()}
+                  className="h-7 text-[10px] px-3 bg-emerald-600 hover:bg-emerald-500"
+                >
+                  + Add Branch
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {branches.map((b) => (
+                  <div
+                    key={b.id}
+                    className="grid grid-cols-12 gap-2 items-center bg-slate-800/30 p-2 rounded border border-slate-700 group"
+                  >
+                    <div className="col-span-5">
+                      <Input
+                        label="Name"
+                        value={b.name}
+                        onChange={(e) =>
+                          updateBranch(b.id, "name", e.target.value)
+                        }
+                        className="h-8 text-xs bg-[#0b1120]"
+                      />
+                    </div>
+                    <div className="col-span-6">
+                      <Input
+                        label="Router IP"
+                        value={b.routerIp}
+                        onChange={(e) =>
+                          updateBranch(b.id, "routerIp", e.target.value)
+                        }
+                        className="h-8 text-xs bg-[#0b1120] font-mono"
+                        placeholder="192.168.x.1"
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-center pt-4">
+                      <button
+                        onClick={() => deleteBranch(b.id)}
+                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors opacity-60 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {branches.length === 0 && (
+                  <div className="text-center text-xs text-slate-500 py-8">
+                    No branches defined.
+                  </div>
+                )}
               </div>
             </div>
           )}
